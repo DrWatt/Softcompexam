@@ -54,16 +54,17 @@ def model_upload(modpath):
             mod.raise_for_status()
         except requests.exceptions.RequestException:
             print("Error: Could not download file")
-            while(requests.exceptions.RequestException):
-                print("Try again")
-                modpath =input()
-                try:
-                    mod = requests.get(modpath)
-                    mod.raise_for_status()
-                except requests.exceptions.RequestException:
-                    continue
-                else:
-                    break
+            #while(requests.exceptions.RequestException):
+                #print("Try again")
+                #modpath =input()
+                #try:
+                  #  mod = requests.get(modpath)
+                 #   mod.raise_for_status()
+                #except requests.exceptions.RequestException:
+                 #   continue
+                #else:
+                  #  break
+            return None
         with open("model.joblib","wb") as o:
             o.write(mod.content)
         modpath = "model.joblib"
@@ -108,7 +109,7 @@ def nn_performance(model, datatest):
     plt.hist
     return distance
 
-def prediction(datapath,modelpath,performance=0):
+def prediction(datapath,modelpath,performance=0,NSamples=0):
 
     dataset = data_upload(datapath)
     if dataset.empty: 
@@ -118,7 +119,13 @@ def prediction(datapath,modelpath,performance=0):
     estimator = model_upload(modelpath)
     if estimator == None:
         return 2
-    X = data[15000:,1:8]
+    if NSamples== 0:
+        X = data[:,1:8]
+    elif NSamples > dataset.size:
+        print("Sample requested is greater than dataset provided: using whole dataset")
+        X = data[:,1:8]
+    else:
+         X = data[:NSamples,1:8]
     print("Thinking about BXs..")
     pred=encoder.inverse_transform(estimator.predict(np.array(X)))
     
@@ -128,24 +135,35 @@ def prediction(datapath,modelpath,performance=0):
 
     return pred
 #%%
-def training_data_loader(datapath):
+def training_data_loader(datapath,NSample=0):
     dataset = data_upload(datapath)
     if dataset.empty:
         return 1
     else:
         data = dataset.values
-    X = data[:1000,1:8]
-    BX = data[:1000,0]
+    if NSample== 0:
+        X = data[:,1:8]
+        BX = data[:,0]
+    elif NSample > dataset.size:
+        print("Sample requested is greater than dataset provided: using whole dataset")
+        X = data[:,1:8]
+        BX = data[:,0]
+    else:
+        X = data[:NSample,1:8]
+        BX = data[:1000,0]
     encoder = LabelEncoder()
     encoder.fit(BX)
     encoded_BX = encoder.transform(BX)
     transformed_BX = np_utils.to_categorical(encoded_BX)
     return [X,transformed_BX]
 
-def training_model(datapath):
-    dataset,encoded_labels = training_data_loader(datapath)
-    estimator = KerasClassifier(build_fn=baseline_model, epochs=200, batch_size=10, verbose=2)
-    history = estimator.fit(dataset, encoded_labels, epochs=300, batch_size=10,verbose=2)
+def training_model(datapath,NSample=0,Nepochs=100,batch=10):
+    try:
+        dataset,encoded_labels = training_data_loader(datapath,NSample)
+    except Exception:
+        return 3
+    estimator = KerasClassifier(build_fn=baseline_model, Nepochs=200, batch_size=batch, verbose=2)
+    history = estimator.fit(dataset, encoded_labels, Nepochs=300, batch_size=batch,verbose=2)
     out=dump(estimator,"model2.joblib")
     return out[0]
 
@@ -158,34 +176,47 @@ def cross_validation(modelpath,datapath):
     results = cross_val_score(estimator,X,Y,cv=kf,verbose=1,n_jobs=4)
     return results.mean()
 
+training_model('',0,0,0)
 ############################################
     #%%
 @given(path = st.text())
 def test_data_upload_link(path):
     path.join("http")
     print(path)
-    data_upload(path)
+    assert (data_upload(path) == pd.DataFrame()).all(None)
 @given(path = st.text())
 def test_data_upload(path):
     print(path)
     data_upload(path)
-    
+def test_data_upload_working():
+    path="https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
+    assert (data_upload(path) == data_upload("datatree.csv")).all(None)
 @given(path = st.text())
 def test_model_upload_link(path):
     path.join("http")
     print(path)
-    data_upload(path)
+    assert model_upload(path) == None
 @given(path = st.text())    
 def test_model_upload(path):
     print(path)
     try:
-        data_upload(path)
+        model_upload(path)
     except Exception:
         return 0
 
-@given(mod=st.text(),dat=st.text())
-def test_prediction(mod,dat):
-    assert prediction(dat,mod)
+def test_model_upload_working():
+    path="https://github.com/DrWatt/softcomp/blob/master/asd.joblib?raw=true"
+    assert (model_upload(path) == model_upload("asd.joblib"))
+    
+@given(mod=st.text(),dat=st.text(),n=st.integers(),perf=st.integers(0,1))
+def test_prediction(mod,dat,perf,n):
+    assert prediction(dat,mod,perf,n)
+@given(dat=st.text(),n=st.integers(),ne=st.integers(),b=st.integers())
+def test_training(dat,n,ne,b):
+    training_model(dat,n,ne,b)
+    
+
+    
     
 #%%
     
