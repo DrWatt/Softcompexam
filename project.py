@@ -23,6 +23,9 @@ from sklearn.pipeline import Pipeline
 #from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
 from joblib import load, dump
 import requests
 from hypothesis import given
@@ -30,8 +33,12 @@ import hypothesis.strategies as st
 #from scipy.stats import poisson
 #from scipy.optimize import curve_fit
 #from scipy.misc import factorial
+
+#xgboost
+import xgboost as xgb
+
 #%%
-seed = 5
+
 np.random.seed(seed)
 def baseline_model():
     model = Sequential()
@@ -154,7 +161,9 @@ def training_data_loader(datapath,NSample=0):
     encoder = LabelEncoder()
     encoder.fit(BX)
     encoded_BX = encoder.transform(BX)
+    print(encoded_BX)
     transformed_BX = np_utils.to_categorical(encoded_BX)
+    print(transformed_BX)
     return [X,transformed_BX]
 
 def training_model(datapath,NSample=0,Nepochs=100,batch=10):
@@ -176,9 +185,64 @@ def cross_validation(modelpath,datapath):
     results = cross_val_score(estimator,X,Y,cv=kf,verbose=1,n_jobs=4)
     return results.mean()
 
-training_model('',0,0,0)
+
 ############################################
-    #%%
+#%%
+#xgboost
+
+def xg(datapath,datate):
+    aracc=pd.DataFrame(columns=['seed','accuracy'])
+    dataset = data_upload(datapath)
+    datatest = data_upload(datate)
+    if dataset.empty or datatest.empty :
+        return 1
+    else:
+        data = dataset.copy()
+        datats = datatest.copy()
+        encoder = LabelEncoder()
+        encoder.fit(data['bxout'])
+        print(encoder.classes_)
+    
+    dtest = xgb.DMatrix(datats[['bx','phi','phiB','wheel','sector','station','quality']])
+
+    for seed in range(1400,1600):
+        print("Trying seed: ",seed)
+        Xtrain,Xvalid,Ytrain,Yvalid=train_test_split(data[['bx','phi','phiB','wheel','sector','station','quality']],data["bxout"],random_state=seed,test_size=0.3)
+        dtrain = xgb.DMatrix(Xtrain,label=encoder.transform(Ytrain))
+        dvalid = xgb.DMatrix(Xvalid,label=encoder.transform(Yvalid))
+        evallist = [(dvalid, 'eval'), (dtrain, 'train')]
+
+        args = {'bst:max_depth':10,
+                'bst:eta':0.3,
+                'bst:subsample':0.86,
+                'bst:colsample_bytree': 0.68,
+                'eval_metric': 'merror',
+                'silent':1,
+                'objective':'multi:softmax',
+                'num_class':len(encoder.classes_),
+                'seed':seed}
+       
+    
+        bst = xgb.train(args,dtrain,10,evallist,early_stopping_rounds=10)
+        #bst.dump_model('dump.raw.txt')
+    
+        pred=bst.predict(dtest)
+        #res = {'label' :encoder.transform(datats["bxout"]),'pred': pred}
+        #sub = pd.DataFrame(res, columns=['label','pred'])
+        #sub.to_csv("errrr.csv",index=False)
+        accuracy = {'seed':seed,'accuracy':accuracy_score(encoder.transform(datats["bxout"]),pred)}
+        aracc=aracc.append(accuracy,ignore_index=True)
+    aracc.to_csv("accu3.csv",index=False)
+    return aracc
+
+#%%    
+    
+#%%
+def seed_selector():
+    acc = pd.read_csv("accu.csv",header=0)
+    seed = acc.max(axis=1)
+    print(seed)
+#%%
 @given(path = st.text())
 def test_data_upload_link(path):
     path.join("http")
