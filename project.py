@@ -6,6 +6,7 @@ Created on Fri Aug 23 16:43:13 2019
 @author: marco
 """
 #%%
+import time
 #numpy
 import numpy as np
 # pandas
@@ -38,11 +39,15 @@ import hypothesis.strategies as st
 import xgboost as xgb
 
 #%%
-
+seed = 1563
 np.random.seed(seed)
 def baseline_model():
     model = Sequential()
     model.add(Dense(8, input_dim=7, activation='relu'))
+    model.add(Dense(10, activation='relu'))
+    model.add(Dense(12, activation='relu'))
+    model.add(Dense(10, activation='relu'))
+    model.add(Dense(8, activation='relu'))
     model.add(Dense(7, activation='softmax'))
     # Compile model
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -99,6 +104,7 @@ def data_upload(datapath):
     print("Loading Dataset from Disk")
     try:
         dataset = pd.read_csv(datapath,header=0)
+        print("Entries ", len(dataset))
     except Exception:
         print("Error: File not found or empty")
         return pd.DataFrame()
@@ -107,14 +113,14 @@ def data_upload(datapath):
     return dataset
 #%%
 
-def nn_performance(model, datatest):
-    test = prediction(datatest,model,performance=1)
+def nn_performance(modelpath, datatest):
+    test = prediction(datatest,modelpath,performance=1)
     distance = (test[0]-test[1])
+    accuracy = np.count_nonzero(distance)/len(test[0])
     #binrange=[-0.5,0.5,1.5,2.5,3.5]
-    distplot = plt.hist(distance)#,bins=binrange)
-    print(100*np.unique(distance,return_counts=True)[1]/distance.size)
-    plt.hist
-    return distance
+    #distplot = plt.hist(distance)#,bins=binrange)
+    #print(100*np.unique(distance,return_counts=True)[1]/distance.size)
+    return accuracy
 
 def prediction(datapath,modelpath,performance=0,NSamples=0):
 
@@ -137,18 +143,18 @@ def prediction(datapath,modelpath,performance=0,NSamples=0):
     pred=encoder.inverse_transform(estimator.predict(np.array(X)))
     
     if performance:
-        labels = data[15000:,0]
+        labels = data[:len(X[:,0]),0]
         return [pred,labels]
 
     return pred
 #%%
-def training_data_loader(datapath,NSample=0):
+def training_data_loader(datapath,NSample=None):
     dataset = data_upload(datapath)
     if dataset.empty:
         return 1
     else:
         data = dataset.values
-    if NSample== 0:
+    if NSample== None or NSample == 0:
         X = data[:,1:8]
         BX = data[:,0]
     elif NSample > dataset.size:
@@ -157,22 +163,22 @@ def training_data_loader(datapath,NSample=0):
         BX = data[:,0]
     else:
         X = data[:NSample,1:8]
-        BX = data[:1000,0]
+        BX = data[:NSample,0]
     encoder = LabelEncoder()
     encoder.fit(BX)
     encoded_BX = encoder.transform(BX)
-    print(encoded_BX)
+    #print(encoded_BX)
     transformed_BX = np_utils.to_categorical(encoded_BX)
-    print(transformed_BX)
+    #print(transformed_BX)
     return [X,transformed_BX]
 
-def training_model(datapath,NSample=0,Nepochs=100,batch=10):
+def training_model(datapath,NSample=0,Nepochs=30,batch=10):
     try:
         dataset,encoded_labels = training_data_loader(datapath,NSample)
     except Exception:
         return 3
-    estimator = KerasClassifier(build_fn=baseline_model, Nepochs=200, batch_size=batch, verbose=2)
-    history = estimator.fit(dataset, encoded_labels, Nepochs=300, batch_size=batch,verbose=2)
+    estimator = KerasClassifier(build_fn=baseline_model, epochs=Nepochs, batch_size=batch, verbose=2)
+    history = estimator.fit(dataset, encoded_labels, epochs=Nepochs, batch_size=batch,verbose=2)
     out=dump(estimator,"model2.joblib")
     return out[0]
 
@@ -189,9 +195,20 @@ def cross_validation(modelpath,datapath):
 ############################################
 #%%
 #xgboost
-
-def xg(datapath,datate):
-    aracc=pd.DataFrame(columns=['seed','accuracy'])
+args = {'max_depth':20,
+            'eta':0.1,
+            'subsample':0.82,
+            'colsample_bytree': 0.68,
+            'eval_metric': 'merror',
+            'silent':0,
+            'objective':'multi:softmax',
+            'num_class':len(encoder.classes_),
+            'seed':seed
+            #'num_parallel_tree':1,
+            #'tree_method': 'gpu_hist'
+            }
+def xgtrain(datapath,datate,args={},iterations=10):
+   
     dataset = data_upload(datapath)
     datatest = data_upload(datate)
     if dataset.empty or datatest.empty :
@@ -201,47 +218,75 @@ def xg(datapath,datate):
         datats = datatest.copy()
         encoder = LabelEncoder()
         encoder.fit(data['bxout'])
-        print(encoder.classes_)
-    
+        #print(encoder.classes_)
     dtest = xgb.DMatrix(datats[['bx','phi','phiB','wheel','sector','station','quality']])
+    print("Dataset length: ",len(data))
+    
 
-    for seed in range(1400,1600):
-        print("Trying seed: ",seed)
-        Xtrain,Xvalid,Ytrain,Yvalid=train_test_split(data[['bx','phi','phiB','wheel','sector','station','quality']],data["bxout"],random_state=seed,test_size=0.3)
-        dtrain = xgb.DMatrix(Xtrain,label=encoder.transform(Ytrain))
-        dvalid = xgb.DMatrix(Xvalid,label=encoder.transform(Yvalid))
-        evallist = [(dvalid, 'eval'), (dtrain, 'train')]
+    Xtrain,Xvalid,Ytrain,Yvalid=train_test_split(data[['bx','phi','phiB','wheel','sector','station','quality']],data["bxout"],random_state=seed,test_size=0.3)
+    dtrain = xgb.DMatrix(Xtrain,label=encoder.transform(Ytrain))
+    dvalid = xgb.DMatrix(Xvalid,label=encoder.transform(Yvalid))
+    evallist = [(dvalid, 'eval'), (dtrain, 'train')]
+    
+    print(args)
 
-        args = {'bst:max_depth':10,
-                'bst:eta':0.3,
-                'bst:subsample':0.86,
-                'bst:colsample_bytree': 0.68,
-                'eval_metric': 'merror',
-                'silent':1,
-                'objective':'multi:softmax',
-                'num_class':len(encoder.classes_),
-                'seed':seed}
        
-    
-        bst = xgb.train(args,dtrain,10,evallist,early_stopping_rounds=10)
-        #bst.dump_model('dump.raw.txt')
-    
-        pred=bst.predict(dtest)
-        #res = {'label' :encoder.transform(datats["bxout"]),'pred': pred}
-        #sub = pd.DataFrame(res, columns=['label','pred'])
-        #sub.to_csv("errrr.csv",index=False)
-        accuracy = {'seed':seed,'accuracy':accuracy_score(encoder.transform(datats["bxout"]),pred)}
-        aracc=aracc.append(accuracy,ignore_index=True)
-    aracc.to_csv("accu3.csv",index=False)
-    return aracc
+    #scibst = XGBClassifier(max_depth=20,learning_rate=0.3,subsample=0.82,colsample_bytree=0.68,objective='multi:softmax',seed=seed,verbosity=2,n_jobs=-1)
+    #scibst.fit(Xtrain,Ytrain,eval_metric="merror",verbose=True)
+    evals_result={}    
+    bst = xgb.train(args,dtrain,iterations,evallist,early_stopping_rounds=10,evals_result=evals_result)
+    bst.dump_model('dump.raw.txt')
+    metric = list(evals_result['eval'].keys())
+    results=evals_result['eval'][metric[0]]
+    #xgb.plot_importance(bst,importance_type='gain')
+    #pl=plt.plot(range(len(results)),results)
+    #plt.savefig("foo2.pdf",bbox_inches='tight')
+    pred=bst.predict(dtest)
+    #evals=bst.evals_result()
+    #print(evals)
+    #plt = plot
+    #res = {'label' :encoder.transform(datats["bxout"]),'pred': pred}
+    #sub = pd.DataFrame(res, columns=['label','pred'])
+    #sub.to_csv("errrr.csv",index=False)
+    #results = scibst.evals_result()
+    return accuracy_score(encoder.transform(datats["bxout"]),pred)
+   
 
 #%%    
+def run():
+    
+    time0 = time.time()
+    bdtres = xgtrain("datatree4g.csv",
+            "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv",
+            args,
+            20)
+    print("XGboost's accuracy", bdtres)    
+    #model = training_model("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv",
+                   #NSample=0)
+    #results = 1- nn_performance(model,"https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv")
+    #print("Neural Network's accuracy: ", results)
+    print("XGboost's accuracy", bdtres)
+    
+    print("Executed in %s s" % (time.time() - time0))
+#%%
     
 #%%
+#class method:
+#    def __init__(self,type,datatrain):
+        
+
+
+
+#%%    
+
 def seed_selector():
-    acc = pd.read_csv("accu.csv",header=0)
-    seed = acc.max(axis=1)
-    print(seed)
+    acc = pd.read_csv("accu4.csv",header=0)
+    seeds = pd.DataFrame(columns=['seed','accuracy'])
+    for x in range(5):
+        seed = acc.max(axis=0)
+        acc=acc.drop(index=(seed[0].astype(int)-acc.head()['seed']))
+        seeds = seeds.append(seed,ignore_index=True)
+    seeds.to_csv("seeds.csv",index=False,mode='a')
 #%%
 @given(path = st.text())
 def test_data_upload_link(path):
