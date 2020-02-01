@@ -7,6 +7,9 @@ Created on Fri Aug 23 16:43:13 2019
 """
 #%%
 import time
+import argparse
+import json
+import os
 #numpy
 import numpy as np
 # pandas
@@ -16,29 +19,22 @@ import matplotlib.pyplot as plt
 # Downloading and save/load from disk libraries
 from joblib import load, dump
 import requests
-
-
 # keras
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.wrappers.scikit_learn import KerasClassifier
-from keras.utils import np_utils
+from keras.utils import np_utils, plot_model
 # sklearn
 from sklearn.preprocessing import LabelEncoder
-from sklearn.pipeline import Pipeline
-#from sklearn.model_selection import train_test_split
+#from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-
+from sklearn import neighbors
 # Testing libraries
 from hypothesis import given
 import hypothesis.strategies as st
-#from scipy.stats import poisson
-#from scipy.optimize import curve_fit
-#from scipy.misc import factorial
-
 #xgboost
 import xgboost as xgb
 
@@ -81,16 +77,6 @@ def model_upload(modpath):
             mod.raise_for_status()
         except requests.exceptions.RequestException:
             print("Error: Could not download file")
-            #while(requests.exceptions.RequestException):
-                #print("Try again")
-                #modpath =input()
-                #try:
-                  #  mod = requests.get(modpath)
-                 #   mod.raise_for_status()
-                #except requests.exceptions.RequestException:
-                 #   continue
-                #else:
-                  #  break
             return None
         # Writing model on disk.
         with open("model.joblib","wb") as o:
@@ -128,11 +114,19 @@ def data_upload(datapath):
         # Reading dataset and creating pandas.DataFrame.
         dataset = pd.read_csv(datapath,header=0)
         print("Entries ", len(dataset))
+        f = plt.figure(figsize=(19, 15))
+        plt.matshow(dataset.drop(columns=['bxout']).corr(), fignum=f.number)
+        plt.xticks(range(dataset.shape[1]), dataset.columns, fontsize=14, rotation=45)
+        plt.yticks(range(dataset.shape[1]), dataset.columns, fontsize=14)
+        cb = plt.colorbar()
+        cb.ax.tick_params(labelsize=14)
+        plt.title('Correlation Matrix', fontsize=16);
+        plt.show()
+        
+        
     except Exception:
         print("Error: File not found or empty")
         return pd.DataFrame()
-    ##data = dataset.values
-    ##X = data[:200,1:8]
     return dataset
 
 # Feature scaling: rescaling via min-max normalization.
@@ -280,11 +274,28 @@ def training_model(datapath,NSample=0,Nepochs=30,batch=10):
     estimator = KerasClassifier(build_fn=baseline_model, epochs=Nepochs, batch_size=batch, verbose=2)
     
     # Training method for our model. 
-    history = estimator.fit(dataset, encoded_labels, epochs=Nepochs, batch_size=batch,verbose=2)
+    history = estimator.fit(dataset, encoded_labels, epochs=Nepochs, batch_size=batch,verbose=2,validation_split=0.3)
     
     # Saving trained model on disk. (Only default namefile ATM)
     out=dump(estimator,"model2.joblib")
     
+    plot_model(estimator.model, to_file='model.png',show_shapes=True)
+    
+    plt.plot(history.history['acc'])
+    plt.plot(history.history['val_acc'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')      
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.show()
+    
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.show()
     # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
     return out[0]
 
@@ -306,7 +317,7 @@ def cross_validation(modelpath,datapath):
     kf=KFold(n_splits=10, shuffle=True, random_state=seed)
     
     # Actual validation (verbose and using 4 jobs)
-    results = cross_val_score(estimator,X,Y,cv=kf,verbose=1,n_jobs=4)
+    results = cross_val_score(estimator,X,Y,cv=kf,verbose=1,n_jobs=-1)
     
     # Returning the mean value among the validation results for each fold.
     return results.mean()
@@ -315,16 +326,16 @@ def cross_validation(modelpath,datapath):
 ############################################
 #%%
 # Dict of arguments passed to XGboost constructor.
-args = {'max_depth':10,
-            'eta':0.25,
+args = {'max_depth':5,
+            'eta':0.3,
             'subsample':0.82,
             'colsample_bytree': 0.68,
-            'eval_metric': 'merror',
+            'eval_metric': ['merror','mlogloss'],
             'silent':0,
             'objective':'multi:softmax',
             'num_class':len(encoder.classes_),
-            'seed':seed
-            #'num_parallel_tree':1,
+            'seed':seed,
+            'num_parallel_tree': 5
             #'tree_method': 'gpu_hist'
             }
 
@@ -370,17 +381,34 @@ def xgtrain(datapath,datate,args={},iterations=10):
     #scibst = XGBClassifier(max_depth=20,learning_rate=0.3,subsample=0.82,colsample_bytree=0.68,objective='multi:softmax',seed=seed,verbosity=2,n_jobs=-1)
     #scibst.fit(Xtrain,Ytrain,eval_metric="merror",verbose=True)
     evals_result={}    
-    
     # Training method.
-    bst = xgb.train(args,dtrain,iterations,evallist,early_stopping_rounds=10,evals_result=evals_result)
+    bst = xgb.train(args,dtrain,iterations,evallist,early_stopping_rounds=10, evals_result=evals_result)
     
     # Saving tree snapshot.
-    bst.dump_model('dump.raw.txt')
+    bst.dump_model('bstdump.raw.txt')
     
     metric = list(evals_result['eval'].keys())
-    results=evals_result['eval'][metric[0]]
-    #xgb.plot_importance(bst,importance_type='gain')
-    #pl=plt.plot(range(len(results)),results)
+    results = evals_result['eval'][metric[0]]
+    print(evals_result)
+
+    plt.plot(list(1-a for a in evals_result['train']['merror']))
+    plt.plot(list(1-a for a in evals_result['eval']['merror']))
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')      
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Eval'], loc='upper left')
+    plt.show()
+    
+    plt.plot(list(evals_result['train']['mlogloss']))
+    plt.plot(list(evals_result['eval']['mlogloss']))
+    plt.title('Model Loss')
+    plt.ylabel('Loss')      
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Eval'], loc='upper left')
+    plt.show()
+    
+    # xgb.plot_importance(bst,importance_type='gain')
+    # pl=plt.plot(range(len(results)),results)
     #plt.savefig("foo2.pdf",bbox_inches='tight')
     
     # Evaluating predictions for test data.
@@ -399,18 +427,65 @@ def xgtrain(datapath,datate,args={},iterations=10):
    
 
 #%%    
-def run():
+def neighbor(datapath):
+
+    time0 = time.time()
+
+    dataset = preprocessing(datapath)
+    if dataset.empty:
+        return 1
+    else:
+        data = dataset.values
+    
+    datatest = preprocessing("dataset.csv")
+    if datatest.empty:
+        return 1
+    else:
+        datat = datatest.values
+    # Handling of number of entries argument (NSample).
+    
+    X = data[:,1:8]
+    BX = data[:,0]
+    test = datat[:,1:8]
+    testlabel = datat[:,0]
+    # Encoding BXs to have labels from 0 to 9.
+    #encoder = LabelEncoder()
+    #encoder.fit(BX)
+    y = encoder.transform(BX)
+    ytest = encoder.transform(testlabel)
+    clf = neighbors.KNeighborsClassifier(n_neighbors=15,algorithm='kd_tree', weights='uniform',n_jobs=-1)
+    clf.fit(X,y)
+    
+    #Z = clf.predict(test)
+    
+    # Definition of a 'distance' between prediction and true label.
+    
+    print(clf.score(test,ytest))
+    
+    #print(Z)
+
+    print("Executed in %s s" % (time.time() - time0))
+
+    
+    
+    
+    
+    return 0
+
+#%%
+def run(argss):
     
     time0 = time.time()
-    #bdtres = xgtrain("datatree4g.csv",
-    #        "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv",
-    #        args,
-    #        76)
-    #print("XGboost's accuracy", bdtres)    
-    model = training_model("datatree4g.csv",
-                   NSample=0)
-    results = 1- nn_performance(model,"https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv")
-    print("Neural Network's accuracy: ", results)
+    bdtres = xgtrain("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv",
+            "datatree.csv",
+            args,
+            20)
+    print("XGboost's accuracy", bdtres)    
+    # model = training_model("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv",
+    #                 NSample=0)
+    
+#    results = 1- nn_performance(model,"https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv")
+#    print("Neural Network's accuracy: ", results)
     #print("XGboost's accuracy", bdtres)
     
     print("Executed in %s s" % (time.time() - time0))
@@ -477,6 +552,20 @@ def test_training(dat,n,ne,b):
     
     
 #%%
-    
-    
+#if __name__ == '__main__':
+#    parser=argparse.ArgumentParser()
+#    parser.add_argument('--data',type=str,help="Url or path of dataset in csv format.")
+#    parser.add_argument('-p', action='store_true', help='If flagged set predecting mode using a previously trained model')
+#    parser.add_argument('--modeltraining', help="Choice of ML model between NN, xgboost BDT or KNN")
+#    parser.add_argument('--params', help="Hyperparameters for xgboost")
+#    parser.add_argument('--modelupload',type=str,help="Url or path of model in joblib format")
+#    
+#    #parser.set_defaults
+#    print(args.params)
+#    params = json.load(open(args.params)) if args.params[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+args.params))
+#    
+#
+#    
+#    run(args)
+#    
     
