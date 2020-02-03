@@ -277,7 +277,7 @@ def training_data_loader(datapath,NSample=None):
     
     #small data: batch = 8
     #medium data: batch = 30
-def training_model(datapath,NSample=0,Nepochs=48,batch=30):
+def training_model(datapath,NSample=0,par = {'Nepochs':48,'batch':30,'valsplit':0.3}):
     
     # Loading and preparing data for training.
     try:
@@ -286,10 +286,10 @@ def training_model(datapath,NSample=0,Nepochs=48,batch=30):
         return 3
     
     # Keras constructor with scikit-learn API.
-    estimator = KerasClassifier(build_fn=baseline_model, epochs=Nepochs, batch_size=batch, verbose=2)
+    estimator = KerasClassifier(build_fn=baseline_model, epochs=par['Nepochs'], batch_size=par['batch'], verbose=2)
     
     # Training method for our model. 
-    history = estimator.fit(dataset, encoded_labels, epochs=Nepochs, batch_size=batch,verbose=2,validation_split=0.3)
+    history = estimator.fit(dataset, encoded_labels, epochs=par['Nepochs'], batch_size=par['batch'],verbose=2,validation_split=par['valsplit'])
     
     # Saving trained model on disk. (Only default namefile ATM)
     out=dump(estimator,"model2.joblib")
@@ -343,18 +343,7 @@ def cross_validation(modelpath,datapath):
 ############################################
 #%%
 # Dict of arguments passed to XGboost constructor.
-args = {'max_depth':5,
-            'eta':0.3,
-            'subsample':0.82,
-            'colsample_bytree': 0.68,
-            'eval_metric': ['merror','mlogloss'],
-            'silent':0,
-            'objective':'multi:softmax',
-            'num_class':len(encoder.classes_),
-            'seed':seed,
-            'num_parallel_tree': 5
-            #'tree_method': 'gpu_hist'
-            }
+
 
 # Function to construct and train a BDT using the XGboost library.
     # datapath: string argument specifing path (local or URL) of training data in csv format.
@@ -362,7 +351,7 @@ args = {'max_depth':5,
     # args: dict argument with list of parameters.
     # iterations: int argument specifing number of iterations performed in training.
 
-def xgtrain(datapath,datate,args={},iterations=10):
+def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iterations=10):
    
     # Loading and preparing training data and test data.
     dataset = preprocessing(datapath,cor=True)
@@ -394,9 +383,6 @@ def xgtrain(datapath,datate,args={},iterations=10):
     
     print(args)
 
-       
-    #scibst = XGBClassifier(max_depth=20,learning_rate=0.3,subsample=0.82,colsample_bytree=0.68,objective='multi:softmax',seed=seed,verbosity=2,n_jobs=-1)
-    #scibst.fit(Xtrain,Ytrain,eval_metric="merror",verbose=True)
     evals_result={}    
     # Training method.
     bst = xgb.train(args,dtrain,iterations,evallist,early_stopping_rounds=10, evals_result=evals_result)
@@ -406,25 +392,31 @@ def xgtrain(datapath,datate,args={},iterations=10):
     
     metric = list(evals_result['eval'].keys())
     results = evals_result['eval'][metric[0]]
-    print(evals_result)
 
-    plt.plot(list(1-a for a in evals_result['train']['merror']))
-    plt.plot(list(1-a for a in evals_result['eval']['merror']))
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')      
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Eval'], loc='upper left')
-    plt.savefig("XGBoost_model_accuracy.png")
-    plt.clf()
     
-    plt.plot(list(evals_result['train']['mlogloss']))
-    plt.plot(list(evals_result['eval']['mlogloss']))
-    plt.title('Model Loss')
-    plt.ylabel('Loss')      
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Eval'], loc='upper left')
-    plt.savefig("XGboost_Model_Loss.png")
-    plt.clf()
+    for met in evals_result['train']:
+        if met == 'merror':
+            plt.plot(list(1-a for a in evals_result['train']['merror']))
+            plt.plot(list(1-a for a in evals_result['eval']['merror']))
+            plt.title('Model accuracy')
+            plt.ylabel('Accuracy')      
+            plt.xlabel('Epoch')
+            plt.legend(['Train', 'Eval'], loc='upper left')
+            plt.savefig("XGBoost_model_accuracy.png")
+            plt.clf()
+            continue
+            
+        plt.plot(list(a for a in evals_result['train'][met]))
+        plt.plot(list(a for a in evals_result['eval'][met]))
+        t = "Model " + met
+        plt.title(t)
+        plt.ylabel(met)      
+        plt.xlabel('Epoch')
+        plt.legend(['Train', 'Eval'], loc='upper left')
+        plt.savefig("XGBoost_" + t+".png")
+        plt.clf()
+
+
     
     out=dump(bst,"bst.joblib")
     # xgb.plot_importance(bst,importance_type='gain')
@@ -432,19 +424,14 @@ def xgtrain(datapath,datate,args={},iterations=10):
     #plt.savefig("foo2.pdf",bbox_inches='tight')
     
     # Evaluating predictions for test data.
-    pred=bst.predict(dtest)
-    
-    #evals=bst.evals_result()
-    #print(evals)
-    #plt = plot
-    #res = {'label' :encoder.transform(datats["bxout"]),'pred': pred}
-    #sub = pd.DataFrame(res, columns=['label','pred'])
-    #sub.to_csv("errrr.csv",index=False)
-    #results = scibst.evals_result()
+    # pred=bst.predict(dtest)
     
     # Returning accuracy evaluated using the test data provided.
-    return accuracy_score(encoder.transform(datats["bxout"]),pred)
-   
+    # return accuracy_score(encoder.transform(datats["bxout"]),pred)
+    
+    if not ('merror' in evals_result['train'] and 'mlogloss' in evals_result['train']):
+        print("\n\n\nUSING EVALUATION METRICS NOT SUITED FOR MULTICLASSIFICATION. USE AT YOUR RISK\n\n\n")
+    return 0
 
 #%%    
 def neighbor(datapath):
@@ -509,7 +496,7 @@ def run(argss):
         if argss.p:
             pred = prediction(argss.data,argss.modelupload)
             pred.astype(int).tofile("xgbres.csv",sep='\n',format='%1i')
-                
+            print("Predictions saved in .csv format")                
             
         else:
             try:
@@ -518,24 +505,43 @@ def run(argss):
                 xgparams['seed'] = eval(xgparams['seed'])
             except Exception:
                 print("XGboost parameters not found! Using default values")
-                xgparams = {}
+                xgparams = {'max_depth':5,
+                            'eta':0.3,
+                            'subsample':0.82,
+                            'colsample_bytree': 0.68,
+                            'eval_metric': ['merror','mlogloss'],
+                            'silent':0,
+                            'objective':'multi:softmax',
+                            'num_class':len(encoder.classes_),
+                            'seed':seed,
+                            'num_parallel_tree': 5
+                            #'tree_method': 'gpu_hist'
+                            }
             bdtres = xgtrain(argss.data,
                     "datatree.csv",
                     xgparams,
-                    20)
-            print("XGboost's accuracy", bdtres)    
+                    20)  
+            print("Plots of evaluation metrics vs epochs saved. \nModel in .joblib format saved for prediction and testing")
     
     if argss.nn:
         if argss.p:
             pred = prediction(argss.data,argss.modelupload)
             pred.astype(int).tofile("kerasres.csv",sep='\n',format='%1i')
+            print("Predictions saved in .csv format")
         else:
+            try:
+                nnparams = json.load(open(pars.nnparams)) if pars.nnparams[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+pars.nnparams))
+            except Exception:
+                print("NN parameters not found! Using default values")
+                nnparams = {'Nepochs':48,'batch':30,'valsplit':0.3}
             model = training_model(argss.data,
-                            NSample=0
+                            par=nnparams
                             )
             
             results = 1- nn_performance(model,"datatree.csv")
             print("Neural Network's accuracy: ", results)
+            print("Plots of evaluation metrics vs epochs saved. \nModel in .joblib format saved for prediction and testing")
+
     #print("XGboost's accuracy", bdtres)
     if argss.nn == 0 and argss.xgb == 0:
         print("Choose a model using the --xgb and/or --nn flags")
@@ -607,7 +613,7 @@ if __name__ == '__main__':
     parser.add_argument('--nn', action='store_true', help='If flagged activate keras nn model')
     parser.add_argument('--nnlayout', type=dict, help="Layout for the Keras NN")
     # parser.add_argument('--modeltraining', help="Choice of ML model between NN, xgboost BDT or KNN")
-    parser.add_argument('--xgparams', help="Hyperparameters for xgboost")
+    parser.add_argument('--xgparams', help="Hyperparameters for xgboost in .json format")
     parser.add_argument('--nnparams', help="Hyperparameters for Keras NN")
     parser.add_argument('-p', action='store_true', help='If flagged set predecting mode using a previously trained model')
     parser.add_argument('--modelupload',type=str,help="Url or path of model in joblib format")
