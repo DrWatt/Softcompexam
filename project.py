@@ -118,16 +118,7 @@ def data_upload(datapath):
     try:
         # Reading dataset and creating pandas.DataFrame.
         dataset = pd.read_csv(datapath,header=0)
-        print("Entries ", len(dataset))
-        f = plt.figure(figsize=(19, 15))
-        plt.matshow(dataset.drop(columns=['bxout']).corr(), fignum=f.number)
-        plt.xticks(range(dataset.shape[1]), dataset.columns, fontsize=14, rotation=45)
-        plt.yticks(range(dataset.shape[1]), dataset.columns, fontsize=14)
-        cb = plt.colorbar()
-        cb.ax.tick_params(labelsize=14)
-        plt.title('Correlation Matrix', fontsize=16);
-        plt.show()
-        
+        print("Entries ", len(dataset))        
         
     except Exception:
         print("Error: File not found or empty")
@@ -137,8 +128,18 @@ def data_upload(datapath):
 # Feature scaling: rescaling via min-max normalization.
     # datapath: string argument specifing path (local or URL) of data in csv format.
 
-def preprocessing(datapath):
+def preprocessing(datapath,cor=False):
     data = data_upload(datapath).copy()
+    if cor == True:
+            f = plt.figure(figsize=(19, 15))
+            plt.matshow(data.drop(columns=['bxout']).corr(), fignum=f.number)
+            plt.xticks(range(data.shape[1]), data.drop(columns=['bxout']).columns, fontsize=14, rotation=45)
+            plt.yticks(range(data.shape[1]), data.drop(columns=['bxout']).columns, fontsize=14)
+            cb = plt.colorbar()
+            cb.ax.tick_params(labelsize=14)
+            plt.title('Correlation Matrix', fontsize=16);
+            plt.savefig("Correlation_training_set.png")
+            plt.clf()
     
     # Normalization factor (min - max for every feature).
     norm = data.max() - data.min()
@@ -241,7 +242,7 @@ def nn_performance(modelpath, datatest):
 def training_data_loader(datapath,NSample=None):
     
     # Uploading preprocessed dataset.
-    dataset = preprocessing(datapath)
+    dataset = preprocessing(datapath,cor=True)
     if dataset.empty:
         return 1
     else:
@@ -301,7 +302,8 @@ def training_model(datapath,NSample=0,Nepochs=48,batch=30):
     plt.ylabel('Accuracy')      
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
+    plt.savefig("Keras_NN_Accuracy.png")
+    plt.clf()
     
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -309,7 +311,8 @@ def training_model(datapath,NSample=0,Nepochs=48,batch=30):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
+    plt.savefig("Keras_NN_Loss.png")
+    plt.clf()
     # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
     return out[0]
 
@@ -362,7 +365,7 @@ args = {'max_depth':5,
 def xgtrain(datapath,datate,args={},iterations=10):
    
     # Loading and preparing training data and test data.
-    dataset = preprocessing(datapath)
+    dataset = preprocessing(datapath,cor=True)
     datatest = preprocessing(datate)
     if dataset.empty or datatest.empty :
         return 1
@@ -411,7 +414,8 @@ def xgtrain(datapath,datate,args={},iterations=10):
     plt.ylabel('Accuracy')      
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Eval'], loc='upper left')
-    plt.show()
+    plt.savefig("XGBoost_model_accuracy.png")
+    plt.clf()
     
     plt.plot(list(evals_result['train']['mlogloss']))
     plt.plot(list(evals_result['eval']['mlogloss']))
@@ -419,7 +423,8 @@ def xgtrain(datapath,datate,args={},iterations=10):
     plt.ylabel('Loss')      
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Eval'], loc='upper left')
-    plt.show()
+    plt.savefig("XGboost_Model_Loss.png")
+    plt.clf()
     
     out=dump(bst,"bst.joblib")
     # xgb.plot_importance(bst,importance_type='gain')
