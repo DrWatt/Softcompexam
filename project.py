@@ -21,7 +21,7 @@ from joblib import load, dump
 import requests
 # keras
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Dense,Dropout
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.utils import np_utils, plot_model
 # sklearn
@@ -30,6 +30,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn import neighbors
 # Testing libraries
@@ -46,16 +47,20 @@ encoder.fit([-4,-3,-2,-1,0,1,2,3,4])
 
 #Model constructor definition as needed to use scikit-learn wrapper with keras.
 
-def baseline_model():
+def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
     model = Sequential()
     
     #Nodes of the NN.
-    model.add(Dense(8, input_dim=7, activation='relu'))
-    model.add(Dense(10, activation='relu'))
-    model.add(Dense(12, activation='relu'))
-    model.add(Dense(10, activation='relu'))
-    model.add(Dense(8, activation='relu'))
-    model.add(Dense(9, activation='softmax'))
+    model.add(Dense(hidden_nodes[0], input_dim=indim, activation='relu'))
+    for a in hidden_nodes[1:]:
+        model.add(Dense(a,activation='relu'))
+    
+
+    # # model.add(Dense(10, activation='relu'))
+    # # model.add(Dense(12, activation='relu'))
+    # # model.add(Dense(10, activation='relu'))
+    # model.add(Dense(8, activation='relu'))
+    model.add(Dense(outdim, activation='softmax'))
     
     # Compile model.
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -165,8 +170,7 @@ def prediction(datapath,modelpath,performance=False,NSamples=0):
     # Failed loading handling (empty dataset exception).
     if dataset.empty: 
         return 1 
-    else: 
-        data = dataset.values
+
     
     # Loading NN.
     estimator = model_upload(modelpath)
@@ -177,20 +181,28 @@ def prediction(datapath,modelpath,performance=False,NSamples=0):
     
     # Handling of number of entries argument (NSample).
     if NSamples == 0:
-        X = data[:,1:8]
+        X = dataset.drop(columns=['bxout','is2nd'])
     elif NSamples > dataset.size:
         print("Sample requested is greater than dataset provided: using whole dataset")
-        X = data[:,1:8]
+        X = dataset.drop(columns=['bxout','is2nd'])
     else:
-         X = data[:NSamples,1:8]
+         X = dataset.head(NSamples).drop(columns='bxout')
     print("Thinking about BXs..")
-    
     # Actual prediction method + inverse encoding to get actual BX values.
-    pred=encoder.inverse_transform(estimator.predict(np.array(X)))
-    
+    try:
+    # if argss.xgb:
+        pred=encoder.inverse_transform(estimator.predict(X))
+        
+    # else:
+    except Exception: 
+        dtest = xgb.DMatrix(X[['bx','phi','phiB','wheel','sector','station','quality']])
+        pred=encoder.inverse_transform(estimator.predict(dtest).astype(int))   
+
+        
+
     # condition to return also labels.
     if performance:
-        labels = data[:len(X[:,0]),0]
+        labels = dataset.head(len(X.index)).get('bxout')
         return [pred,labels]
 
     return pred
@@ -262,7 +274,9 @@ def training_data_loader(datapath,NSample=None):
     # Nepochs: int argument specifing number of epochs the NN will be trained for passed to the NN costructor.
     # batch: int argument specifing the size of the batches used to update the weights passed to the NN costructor.
     
-def training_model(datapath,NSample=0,Nepochs=30,batch=10):
+    #small data: batch = 8
+    #medium data: batch = 30
+def training_model(datapath,NSample=0,Nepochs=48,batch=30):
     
     # Loading and preparing data for training.
     try:
@@ -316,7 +330,7 @@ def cross_validation(modelpath,datapath):
     # Defining Folds specifing number of splits.
     kf=KFold(n_splits=10, shuffle=True, random_state=seed)
     
-    # Actual validation (verbose and using 4 jobs)
+    # Actual validation (verbose and using max number of jobs)
     results = cross_val_score(estimator,X,Y,cv=kf,verbose=1,n_jobs=-1)
     
     # Returning the mean value among the validation results for each fold.
@@ -407,6 +421,7 @@ def xgtrain(datapath,datate,args={},iterations=10):
     plt.legend(['Train', 'Eval'], loc='upper left')
     plt.show()
     
+    out=dump(bst,"bst.joblib")
     # xgb.plot_importance(bst,importance_type='gain')
     # pl=plt.plot(range(len(results)),results)
     #plt.savefig("foo2.pdf",bbox_inches='tight')
@@ -472,30 +487,56 @@ def neighbor(datapath):
     
     return 0
 
+def hyperparam_search(data,param_grid={}):
+    
+    dataset,encoded_labels = training_data_loader(data)
+    
+    estimator = KerasClassifier(build_fn=baseline_model, verbose=2, epochs=48)
+
+    search = GridSearchCV(estimator, param_grid,n_jobs=-1)
+    search.fit(dataset,encoded_labels)
+    print(search.best_params_)
 #%%
 def run(argss):
     
-    time0 = time.time()
-    bdtres = xgtrain("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv",
-            "datatree.csv",
-            args,
-            20)
-    print("XGboost's accuracy", bdtres)    
-    # model = training_model("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv",
-    #                 NSample=0)
     
-#    results = 1- nn_performance(model,"https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree2.csv")
-#    print("Neural Network's accuracy: ", results)
+    if argss.xgb:
+        if argss.p:
+            pred = prediction(argss.data,argss.modelupload)
+            pred.astype(int).tofile("xgbres.csv",sep='\n',format='%1i')
+                
+            
+        else:
+            try:
+                xgparams = json.load(open(pars.xgparams)) if pars.xgparams[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+pars.xgparams))
+                xgparams['num_class'] = eval(xgparams['num_class'])
+                xgparams['seed'] = eval(xgparams['seed'])
+            except Exception:
+                print("XGboost parameters not found! Using default values")
+                xgparams = {}
+            bdtres = xgtrain(argss.data,
+                    "datatree.csv",
+                    xgparams,
+                    20)
+            print("XGboost's accuracy", bdtres)    
+    
+    if argss.nn:
+        if argss.p:
+            pred = prediction(argss.data,argss.modelupload)
+            pred.astype(int).tofile("kerasres.csv",sep='\n',format='%1i')
+        else:
+            model = training_model(argss.data,
+                            NSample=0
+                            )
+            
+            results = 1- nn_performance(model,"datatree.csv")
+            print("Neural Network's accuracy: ", results)
     #print("XGboost's accuracy", bdtres)
+    if argss.nn == 0 and argss.xgb == 0:
+        print("Choose a model using the --xgb and/or --nn flags")
+        return 1
     
-    print("Executed in %s s" % (time.time() - time0))
-#%%
-    
-#%%
-#class method:
-#    def __init__(self,type,datatrain):
-        
-
+    return 0
 
 
 #%%    
@@ -552,20 +593,29 @@ def test_training(dat,n,ne,b):
     
     
 #%%
-#if __name__ == '__main__':
-#    parser=argparse.ArgumentParser()
-#    parser.add_argument('--data',type=str,help="Url or path of dataset in csv format.")
-#    parser.add_argument('-p', action='store_true', help='If flagged set predecting mode using a previously trained model')
-#    parser.add_argument('--modeltraining', help="Choice of ML model between NN, xgboost BDT or KNN")
-#    parser.add_argument('--params', help="Hyperparameters for xgboost")
-#    parser.add_argument('--modelupload',type=str,help="Url or path of model in joblib format")
-#    
-#    #parser.set_defaults
-#    print(args.params)
-#    params = json.load(open(args.params)) if args.params[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+args.params))
-#    
-#
-#    
-#    run(args)
-#    
+if __name__ == '__main__':
+    time0 = time.time()
+    
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--data',type=str,help="Url or path of dataset in csv format.")
+    parser.add_argument('--xgb', action='store_true', help='If flagged activate xgboost model')
+    parser.add_argument('--nn', action='store_true', help='If flagged activate keras nn model')
+    parser.add_argument('--nnlayout', type=dict, help="Layout for the Keras NN")
+    # parser.add_argument('--modeltraining', help="Choice of ML model between NN, xgboost BDT or KNN")
+    parser.add_argument('--xgparams', help="Hyperparameters for xgboost")
+    parser.add_argument('--nnparams', help="Hyperparameters for Keras NN")
+    parser.add_argument('-p', action='store_true', help='If flagged set predecting mode using a previously trained model')
+    parser.add_argument('--modelupload',type=str,help="Url or path of model in joblib format")
+    
+    #parser.set_defaults
+    #print(parser.parse_args())
+    pars = parser.parse_args()
+    #xgparams = json.load(open(pars.xgparams)) if pars.xgparams[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+pars.xgparams))
+    
+
+    
+    run(pars)
+    
+    print("Executed in %s s" % (time.time() - time0))
+    
     
