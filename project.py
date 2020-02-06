@@ -292,7 +292,7 @@ def training_model(datapath,NSample=0,par = {'Nepochs':48,'batch':30,'valsplit':
     history = estimator.fit(dataset, encoded_labels, epochs=par['Nepochs'], batch_size=par['batch'],verbose=2,validation_split=par['valsplit'])
     
     # Saving trained model on disk. (Only default namefile ATM)
-    out=dump(estimator,"model2.joblib")
+    out=dump(estimator,"KerasNN_Model.joblib")
     
     plot_model(estimator.model, to_file='model.png',show_shapes=True)
     
@@ -418,7 +418,7 @@ def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iteratio
 
 
     
-    out=dump(bst,"bst.joblib")
+    out=dump(bst,"XGBoost_Model.joblib")
     # xgb.plot_importance(bst,importance_type='gain')
     # pl=plt.plot(range(len(results)),results)
     #plt.savefig("foo2.pdf",bbox_inches='tight')
@@ -611,7 +611,7 @@ if __name__ == '__main__':
     parser.add_argument('--data',type=str,help="Url or path of dataset in csv format.")
     parser.add_argument('--xgb', action='store_true', help='If flagged activate xgboost model')
     parser.add_argument('--nn', action='store_true', help='If flagged activate keras nn model')
-    parser.add_argument('--nnlayout', type=dict, help="Layout for the Keras NN")
+    #parser.add_argument('--nnlayout', type=dict, help="Layout for the Keras NN")
     # parser.add_argument('--modeltraining', help="Choice of ML model between NN, xgboost BDT or KNN")
     parser.add_argument('--xgparams', help="Hyperparameters for xgboost in .json format")
     parser.add_argument('--nnparams', help="Hyperparameters for Keras NN")
