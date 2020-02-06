@@ -545,8 +545,8 @@ def run(argss):
                             par=pr
                             )
             
-            results = 1- nn_performance(model,"datatree.csv")
-            print("Neural Network's accuracy: ", results)
+            # results = 1- nn_performance(model,"datatree.csv")
+            # print("Neural Network's accuracy: ", results)
             print("Plots of evaluation metrics vs epochs saved. \nModel in .joblib format saved for prediction and testing")
 
     #print("XGboost's accuracy", bdtres)
