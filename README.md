@@ -29,13 +29,12 @@ The script, written in python3, can be executed from the command line, typing `.
   - `num_class` number of classes the algorithm has to deal with and predict;
   - `seed` seed of the random generator;
   - `num_parallel_tree` number of parallel trees to activate the Random Forest techinque.
-- `--nnparams` list[] with the number of epochs, the batch size and the validation split performed by the NN (set equal to 0 the parameters to use the relative default value);
+- `--nnparams` number of epochs, batch size and validation split performed by the NN (set equal to 0 a parameter to use the relative default value);
 - `-p` to perform prediction using pretrained models;
 - `--modelupload` to specify the Url or path of a pretrained model in joblib format.
 
     
 The ROOT tree used to popolate the test database can be found here: https://www.dropbox.com/s/5cywqqkcv04649l/DTTree_zMuSkim_70k.root?dl=0
 
-(WORK IN PROGRESS)
 
 [comment]: # (This is done by supplying 15000  tracks to the NN for training. I have trained the NN on the Colaboratory platform developedby Google, due to the long time needed in order to complete the process.)
