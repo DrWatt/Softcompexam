@@ -1,0 +1,13 @@
+{
+    "max_depth":5,
+    "eta":0.3,
+    "subsample":0.82,
+    "colsample_bytree": 0.68,
+    "eval_metric": ["merror","mlogloss"],
+    "silent":0,
+    "objective":"multi:softmax",
+    "num_class": "len(encoder.classes_)",
+    "seed" : "seed",
+    "num_parallel_tree" : 5
+}
+
