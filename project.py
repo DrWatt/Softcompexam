@@ -277,7 +277,7 @@ def training_data_loader(datapath,NSample=None):
     
     #small data: batch = 8
     #medium data: batch = 30
-def training_model(datapath,NSample=0,par = {'Nepochs':48,'batch':30,'valsplit':0.3}):
+def training_model(datapath,NSample=0, par = [48,30,0.3]):
     
     # Loading and preparing data for training.
     try:
@@ -285,11 +285,15 @@ def training_model(datapath,NSample=0,par = {'Nepochs':48,'batch':30,'valsplit':
     except Exception:
         return 3
     
+    if par[0] == 0 : par[0] = 48
+    if par[1] == 0 : par[1] = 30
+    if par[2] == 0 : par[2] = 0.3
+    print(par)
     # Keras constructor with scikit-learn API.
-    estimator = KerasClassifier(build_fn=baseline_model, epochs=par['Nepochs'], batch_size=par['batch'], verbose=2)
+    estimator = KerasClassifier(build_fn=baseline_model, epochs=par[0], batch_size=par[1], verbose=2)
     
     # Training method for our model. 
-    history = estimator.fit(dataset, encoded_labels, epochs=par['Nepochs'], batch_size=par['batch'],verbose=2,validation_split=par['valsplit'])
+    history = estimator.fit(dataset, encoded_labels, epochs=par[0], batch_size=par[1],verbose=2,validation_split=par[2])
     
     # Saving trained model on disk. (Only default namefile ATM)
     out=dump(estimator,"KerasNN_Model.joblib")
@@ -529,13 +533,16 @@ def run(argss):
             pred.astype(int).tofile("kerasres.csv",sep='\n',format='%1i')
             print("Predictions saved in .csv format")
         else:
-            try:
-                nnparams = json.load(open(pars.nnparams)) if pars.nnparams[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+pars.nnparams))
-            except Exception:
-                print("NN parameters not found! Using default values")
-                nnparams = {'Nepochs':48,'batch':30,'valsplit':0.3}
+            # try:
+            #     nnparams = json.load(open(pars.nnparams)) if pars.nnparams[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+pars.nnparams))
+            # except Exception:
+            #     print("NN parameters not found! Using default values")
+            #     nnparams = [48,30,0.3]
+          
+            pr = [int(argss.nnparams[0]),int(argss.nnparams[1]),float(argss.nnparams[2])]
+            print(pr)
             model = training_model(argss.data,
-                            par=nnparams
+                            par=pr
                             )
             
             results = 1- nn_performance(model,"datatree.csv")
@@ -614,7 +621,7 @@ if __name__ == '__main__':
     #parser.add_argument('--nnlayout', type=dict, help="Layout for the Keras NN")
     # parser.add_argument('--modeltraining', help="Choice of ML model between NN, xgboost BDT or KNN")
     parser.add_argument('--xgparams', help="Hyperparameters for xgboost in .json format")
-    parser.add_argument('--nnparams', help="Hyperparameters for Keras NN")
+    parser.add_argument('--nnparams',nargs='+', help="Hyperparameters for Keras NN")
     parser.add_argument('-p', action='store_true', help='If flagged set predecting mode using a previously trained model')
     parser.add_argument('--modelupload',type=str,help="Url or path of model in joblib format")
     
