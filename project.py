@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Aug 23 16:43:13 2019
-
-@author: marco
-"""
 #%%
 import time
 import argparse
@@ -45,7 +40,7 @@ np.random.seed(seed)
 encoder = LabelEncoder()
 encoder.fit([-4,-3,-2,-1,0,1,2,3,4])
 
-#Model constructor definition as needed to use scikit-learn wrapper with keras.
+#Model constructor definition, as needed to use scikit-learn wrapper with keras.
 
 def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
     model = Sequential()
@@ -54,7 +49,6 @@ def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
     model.add(Dense(hidden_nodes[0], input_dim=indim, activation='relu'))
     for a in hidden_nodes[1:]:
         model.add(Dense(a,activation='relu'))
-    
 
     # # model.add(Dense(10, activation='relu'))
     # # model.add(Dense(12, activation='relu'))
@@ -82,7 +76,7 @@ def model_upload(modpath):
             mod.raise_for_status()
         except requests.exceptions.RequestException:
             print("Error: Could not download file")
-            return None
+            return 404
         # Writing model on disk.
         with open("model.joblib","wb") as o:
             o.write(mod.content)
@@ -93,7 +87,8 @@ def model_upload(modpath):
         estimator = load(modpath)
     except Exception:
         print("Error: File not found or empty")
-        return None
+    
+        return 404
     return estimator
 
 # Function to load data from disk or using an URL.
@@ -108,7 +103,7 @@ def data_upload(datapath):
             dataset.raise_for_status()
         except requests.exceptions.RequestException:
             print("Error: Could not download file")
-            return pd.DataFrame()
+            return 404
         
         # Writing dataset on disk.    
         with open("dataset.csv","wb") as o:
@@ -121,15 +116,23 @@ def data_upload(datapath):
         print("Entries ", len(dataset))        
         
     except Exception:
+        
         print("Error: File not found or empty")
-        return pd.DataFrame()
+        return 404
     return dataset
 
 # Feature scaling: rescaling via min-max normalization.
     # datapath: string argument specifing path (local or URL) of data in csv format.
 
 def preprocessing(datapath,cor=False):
-    data = data_upload(datapath).copy()
+    
+    
+    data = data_upload(datapath)
+    
+    # Failed loading handling (empty dataset exception).
+    if type(data) != pd.DataFrame:
+        return 404
+        
     if cor == True:
             f = plt.figure(figsize=(19, 15))
             plt.matshow(data.drop(columns=['bxout']).corr(), fignum=f.number)
@@ -169,16 +172,19 @@ def prediction(datapath,modelpath,performance=False,NSamples=0):
     dataset = preprocessing(datapath)
     
     # Failed loading handling (empty dataset exception).
-    if dataset.empty: 
-        return 1 
+    if type(dataset) != pd.DataFrame: 
+        return 404
 
     
     # Loading NN.
     estimator = model_upload(modelpath)
     
     # Failed loading handling.
-    if estimator == None:
-        return 2
+    if estimator == 404:
+        return 404
+    if type(estimator) != KerasClassifier and type(estimator) != xgb.core.Booster:
+        print("Check loaded model compatibility.")
+        return 50000
     
     # Handling of number of entries argument (NSample).
     if NSamples == 0:
@@ -191,15 +197,10 @@ def prediction(datapath,modelpath,performance=False,NSamples=0):
     print("Thinking about BXs..")
     # Actual prediction method + inverse encoding to get actual BX values.
     try:
-    # if argss.xgb:
         pred=encoder.inverse_transform(estimator.predict(X))
-        
-    # else:
     except Exception: 
         dtest = xgb.DMatrix(X[['bx','phi','phiB','wheel','sector','station','quality']])
         pred=encoder.inverse_transform(estimator.predict(dtest).astype(int))   
-
-        
 
     # condition to return also labels.
     if performance:
@@ -217,6 +218,11 @@ def nn_performance(modelpath, datatest):
     
     # Performing prediction
     test = prediction(datatest,modelpath,performance=True)
+    
+    # Catching error in prediction function
+    if type(test) != list or type(test[0]) != np.ndarray or type(test[1]) != pd.Series:
+        print("Prediction failed")
+        return 3
     
     # Definition of a 'distance' between prediction and true label.
     distance = (test[0]-test[1])
@@ -243,8 +249,8 @@ def training_data_loader(datapath,NSample=None):
     
     # Uploading preprocessed dataset.
     dataset = preprocessing(datapath,cor=True)
-    if dataset.empty:
-        return 1
+    if type(dataset) != pd.DataFrame: 
+        return 404
     else:
         data = dataset.values
         
@@ -272,9 +278,12 @@ def training_data_loader(datapath,NSample=None):
 # NN training function.
     # datapath: string argument specifing path (local or URL) of data in csv format.
     # NSamples: int argument specifing number of entries used of the dataset. If NSamples == 0 or NSamples > data size the all dataset will be used.
-    # Nepochs: int argument specifing number of epochs the NN will be trained for passed to the NN costructor.
-    # batch: int argument specifing the size of the batches used to update the weights passed to the NN costructor.
-    
+    # par: list of paramaters [Nepochs, batch, validation_split]    
+    # Nepochs: int paraeter specifing number of epochs the NN will be trained for passed to the NN costructor.
+    # batch: int parameter specifing the size of the batches used to update the weights passed to the NN costructor.
+    # validation_split: float parameter specifing the fraction of the input dataset used for validation.
+
+
     #small data: batch = 8
     #medium data: batch = 30
 def training_model(datapath,NSample=0, par = [48,30,0.3]):
@@ -283,8 +292,8 @@ def training_model(datapath,NSample=0, par = [48,30,0.3]):
     try:
         dataset,encoded_labels = training_data_loader(datapath,NSample)
     except Exception:
-        return 3
-    
+        return 4
+    # Setting default values in case of some missing parameter.
     if par[0] == 0 : par[0] = 48
     if par[1] == 0 : par[1] = 30
     if par[2] == 0 : par[2] = 0.3
@@ -300,6 +309,7 @@ def training_model(datapath,NSample=0, par = [48,30,0.3]):
     
     plot_model(estimator.model, to_file='model.png',show_shapes=True)
     
+    # Accuracy and Loss function plots saved in png format.
     plt.plot(history.history['acc'])
     plt.plot(history.history['val_acc'])
     plt.title('Model accuracy')
@@ -331,8 +341,11 @@ def cross_validation(modelpath,datapath):
     
     # Loading model from disk.
     estimator = model_upload(modelpath)
-    if estimator == None:
-        return 2
+    if estimator == 404:
+        return 404
+    if type(estimator) != KerasClassifier and type(estimator) != xgb.core.Booster:
+        print("Check loaded model compatibility.")
+        return 50000
     
     # Defining Folds specifing number of splits.
     kf=KFold(n_splits=10, shuffle=True, random_state=seed)
@@ -346,7 +359,7 @@ def cross_validation(modelpath,datapath):
 
 ############################################
 #%%
-# Dict of arguments passed to XGboost constructor.
+
 
 
 # Function to construct and train a BDT using the XGboost library.
@@ -360,16 +373,16 @@ def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iteratio
     # Loading and preparing training data and test data.
     dataset = preprocessing(datapath,cor=True)
     datatest = preprocessing(datate)
+    
+    # Catching data reading errors.
+    if type(dataset) != pd.DataFrame or type(datatest) != pd.DataFrame: 
+        return 404
     if dataset.empty or datatest.empty :
-        return 1
+        return 5
     else:
         data = dataset.copy()
         datats = datatest.copy()
         
-        # Encoding 
-        #encoder = LabelEncoder()
-        #encoder.fit(data['bxout'])
-        #print(encoder.classes_)
         
     # Constructing from test data DMatrix object to pass to XGboost methods.
     dtest = xgb.DMatrix(datats[['bx','phi','phiB','wheel','sector','station','quality']])
@@ -397,6 +410,7 @@ def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iteratio
     metric = list(evals_result['eval'].keys())
     results = evals_result['eval'][metric[0]]
 
+    # Objective and evaluation functions plots.
     
     for met in evals_result['train']:
         if met == 'merror':
@@ -417,18 +431,13 @@ def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iteratio
         plt.ylabel(met)      
         plt.xlabel('Epoch')
         plt.legend(['Train', 'Eval'], loc='upper left')
-        plt.savefig("XGBoost_" + t+".png")
+        plt.savefig("XGBoost_" + t +".png")
         plt.clf()
 
 
-    
-    out=dump(bst,"XGBoost_Model.joblib")
-    # xgb.plot_importance(bst,importance_type='gain')
-    # pl=plt.plot(range(len(results)),results)
-    #plt.savefig("foo2.pdf",bbox_inches='tight')
-    
-    # Evaluating predictions for test data.
-    # pred=bst.predict(dtest)
+    # Saving XGBoost model in joblib format.
+    out = dump(bst,"XGBoost_Model.joblib")
+   
     
     # Returning accuracy evaluated using the test data provided.
     # return accuracy_score(encoder.transform(datats["bxout"]),pred)
@@ -438,6 +447,8 @@ def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iteratio
     return 0
 
 #%%    
+    
+    # K-Nearest neighbor implementation function. Work in progress and unused for now.
 def neighbor(datapath):
 
     time0 = time.time()
@@ -482,6 +493,8 @@ def neighbor(datapath):
     
     
     return 0
+    
+    # Function used to asses the optimal parameters for the Keras NN using a brute force approach.
 
 def hyperparam_search(data,param_grid={}):
     
@@ -493,16 +506,20 @@ def hyperparam_search(data,param_grid={}):
     search.fit(dataset,encoded_labels)
     print(search.best_params_)
 #%%
+    
+    # Main function invoked by execution in shell.
 def run(argss):
     
-    
+    # Routine followed when --xgb is True
     if argss.xgb:
+        # Selection between prediction, using a pretrained model, and training a new one.
         if argss.p:
             pred = prediction(argss.data,argss.modelupload)
             pred.astype(int).tofile("xgbres.csv",sep='\n',format='%1i')
             print("Predictions saved in .csv format")                
             
         else:
+            # Reading parameters in json format if found. If no parameters are specified, default values will be used.
             try:
                 xgparams = json.load(open(pars.xgparams)) if pars.xgparams[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+pars.xgparams))
                 xgparams['num_class'] = eval(xgparams['num_class'])
@@ -521,13 +538,16 @@ def run(argss):
                             'num_parallel_tree': 5
                             #'tree_method': 'gpu_hist'
                             }
+            # Construction and training of XGBoost BDT.
             bdtres = xgtrain(argss.data,
                     "datatree.csv",
                     xgparams,
                     20)  
             print("Plots of evaluation metrics vs epochs saved. \nModel in .joblib format saved for prediction and testing")
-    
+    # Routine followed when --nn is True
     if argss.nn:
+        
+        # Selection between prediction, using a pretrained model, and training a new one.
         if argss.p:
             pred = prediction(argss.data,argss.modelupload)
             pred.astype(int).tofile("kerasres.csv",sep='\n',format='%1i')
@@ -538,9 +558,12 @@ def run(argss):
             # except Exception:
             #     print("NN parameters not found! Using default values")
             #     nnparams = [48,30,0.3]
-          
+            
+            # Reading list of parameters. If no parameters are specified, default values will be used.
             pr = [int(argss.nnparams[0]),int(argss.nnparams[1]),float(argss.nnparams[2])]
             print(pr)
+            
+            # Construction and training of Keras NN.
             model = training_model(argss.data,
                             par=pr
                             )
@@ -550,6 +573,7 @@ def run(argss):
             print("Plots of evaluation metrics vs epochs saved. \nModel in .joblib format saved for prediction and testing")
 
     #print("XGboost's accuracy", bdtres)
+            
     if argss.nn == 0 and argss.xgb == 0:
         print("Choose a model using the --xgb and/or --nn flags")
         return 1
@@ -587,7 +611,7 @@ def test_data_upload_working():
 def test_model_upload_link(path):
     path.join("http")
     print(path)
-    assert model_upload(path) == None
+    assert model_upload(path) == 404
 @given(path = st.text())    
 def test_model_upload(path):
     print(path)
@@ -602,10 +626,10 @@ def test_model_upload_working():
     
 @given(mod=st.text(),dat=st.text(),n=st.integers(),perf=st.integers(0,1))
 def test_prediction(mod,dat,perf,n):
-    assert prediction(dat,mod,perf,n)
-@given(dat=st.text(),n=st.integers(),ne=st.integers(),b=st.integers())
-def test_training(dat,n,ne,b):
-    training_model(dat,n,ne,b)
+    assert prediction(dat,mod,perf,n) == 404
+@given(dat=st.text(),n=st.integers(),ne=st.integers(),b=st.integers(), a = st.floats() )
+def test_training(dat,n,ne,b,a):
+    assert training_model(dat,n,[ne,b,a]) == 4
     
 
     
@@ -636,4 +660,12 @@ if __name__ == '__main__':
     
     print("Executed in %s s" % (time.time() - time0))
     
-    
+
+
+#Errors:
+# 1 No model is chosen
+# 404 missing file    
+# 50000 loaded model different from kerasclassifier and xgbooster
+# 3 Failed prediction function
+# 4 General Error in preparing data for training
+# 5 Empty datasets error
