@@ -510,6 +510,7 @@ def hyperparam_search(data,param_grid={}):
     # Main function invoked by execution in shell.
 def run(argss):
     
+    if argss.data==None: argss.data = "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
     # Routine followed when --xgb is True
     if argss.xgb:
         # Selection between prediction, using a pretrained model, and training a new one.
@@ -560,6 +561,8 @@ def run(argss):
             #     nnparams = [48,30,0.3]
             
             # Reading list of parameters. If no parameters are specified, default values will be used.
+            if argss.nnparams==None:argss.nnparams = [0,0,0]
+            print (argss.nnparams)
             pr = [int(argss.nnparams[0]),int(argss.nnparams[1]),float(argss.nnparams[2])]
             print(pr)
             
