@@ -29,7 +29,7 @@ The script, written in python3, can be executed from the command line, typing `.
   - `num_class` number of classes the algorithm has to deal with and predict;
   - `seed` seed of the random generator;
   - `num_parallel_tree` number of parallel trees to activate the Random Forest techinque.
-- `--nnparams` number of epochs, batch size and validation split performed by the NN (set equal to 0 a parameter to use the relative default value);
+- `--nnparams` number of epochs, batch size and validation split performed by the NN (input values simply separated by space and set equal to 0 a parameter to use the relative default value);
 - `-p` to perform prediction using pretrained models;
 - `--modelupload` to specify the Url or path of a pretrained model in joblib format.
 
