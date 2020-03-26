@@ -16,7 +16,7 @@ The data used for this analysis was collected by the CMS detector during the pro
 
 The script, written in python3, can be executed from the command line, typing `./project.py` with the following flags and options:
 
-- `--data` to specify the Url or path of the dataset in csv format; 
+- `--data` to specify the Url or path of the dataset in csv format (if unspecified a default dataset will be used); 
 - `--xgb` to activate the XGBoost model;
 - `--nn` to activate the NN built with Keras`
 - `--xgparams` to specify the path of a json file specifying the following hyper parameters:
