@@ -38,6 +38,6 @@ def test_training(dat,n,ne,b,a):
     
     
 def test_prediction_fake_data():
-    a = xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1","https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1")
+    a = xgtrain("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv","https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv")
     print(prediction("fake.csv", "XGBoost_Model.joblib"))
     return 0
