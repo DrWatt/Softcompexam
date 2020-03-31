@@ -43,6 +43,24 @@ encoder.fit([-4,-3,-2,-1,0,1,2,3,4])
 #Model constructor definition, as needed to use scikit-learn wrapper with keras.
 
 def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
+    '''
+    Model constructor definition, as needed to use scikit-learn wrapper with keras.    
+    
+    Parameters
+    ----------
+    indim : int, optional
+        Number of features of dataset and dimension of input layer. The default is 7.
+    hidden_nodes : list, optional
+        List of number of nodes per layer. The default is [8,8].
+    outdim : int, optional
+        Number of classes and dimension of output layer. The default is 9.
+
+    Returns
+    -------
+    model : TYPE
+        DESCRIPTION.
+
+    '''
     model = Sequential()
     
     #Nodes of the NN.
@@ -68,6 +86,20 @@ def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
     # modpath: string argument specifing path (local or URL) of model in joblib format.
 
 def model_upload(modpath):
+    '''
+    Function to load pretrained NN.
+
+    Parameters
+    ----------
+    modpath : Strin
+        path (local or URL) of model in joblib format..
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    '''
     if("http" in modpath):
         print("Downloading Model")
         try:    
@@ -95,6 +127,20 @@ def model_upload(modpath):
     # datapath: string argument specifing path (local or URL) of data in csv format.
 
 def data_upload(datapath):
+    '''
+    Function to load data from disk or using an URL.
+
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of data in csv format.
+
+    Returns
+    -------
+    pandas.dataframe
+        Dataframe containing data used for training and/or inference.
+
+    '''
     if("http" in datapath):
         print("Downloading Dataset")
         try:
@@ -125,6 +171,22 @@ def data_upload(datapath):
     # datapath: string argument specifing path (local or URL) of data in csv format.
 
 def preprocessing(datapath,cor=False):
+    '''
+    Feature scaling: rescaling via min-max normalization.
+
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of data in csv format..
+    cor : Boolean, optional
+        Set True if correlation matrix plot is needed. The default is False.
+
+    Returns
+    -------
+    pandas.dataframe
+        Dataframe rescaled using min-max normalization.
+
+    '''
     
     
     data = data_upload(datapath)
@@ -167,7 +229,30 @@ def preprocessing(datapath,cor=False):
     # NSamples: int argument specifing number of entries used of the dataset. If NSamples == 0 or NSamples > data size the all dataset will be used.
     
 def prediction(datapath,modelpath,performance=False,NSamples=0):
+    '''
+    Function to compute classification of a dataset using a pretrained NN.
     
+
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of data in csv format..
+    modelpath : String
+        path (local or URL) of model in joblib format..
+    performance : Boolean, optional
+        Set between two return mode: False -> return only predictions; True -> return predictions and true labels if provided (for evaluating performance). The default is False.
+    NSamples : int, optional
+        number of entries used of the dataset. If NSamples == 0 or NSamples > data size the all dataset will be used. The default is 0.
+
+    Returns
+    -------
+    pandas.dataframe
+        Dataframe containing inferences made by the model for each entry of the data in input.
+        
+    list of pandas.dataframe
+        List made up of two dataframes, the first contains the inferences, the second contains the true labels for validation.
+
+    '''
     # Loading dataset and preprocessing it.
     dataset = preprocessing(datapath)
     
@@ -215,7 +300,22 @@ def prediction(datapath,modelpath,performance=False,NSamples=0):
     # datatest: string argument specifing path (local or URL) of data in csv format.
 
 def nn_performance(modelpath, datatest):
-    
+    '''
+    Function to perform a simple comparison between prediction and known labels of a test sample.
+
+    Parameters
+    ----------
+    modelpath : String
+        path (local or URL) of model in joblib format..
+    datatest : String
+        path (local or URL) of data in csv format..
+
+    Returns
+    -------
+    Float
+        Fraction of good inferences made by a model.
+
+    '''
     # Performing prediction
     test = prediction(datatest,modelpath,performance=True)
     
@@ -246,6 +346,22 @@ def nn_performance(modelpath, datatest):
     # NSamples: int argument specifing number of entries used of the dataset. If NSamples == None or NSamples > data size the all dataset will be used.
 
 def training_data_loader(datapath,NSample=None):
+    '''
+    Function performing one-hot encoding.
+
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of data in csv format..
+    NSample : int, optional
+        number of entries used of the dataset. If NSamples == None or NSamples > data size the all dataset will be used.. The default is None.
+
+    Returns
+    -------
+    List of pandas.dataframe
+        List made up of two Dataframes: the first contains the preprocessed data and the second one contains the one hot encoded labels.
+
+    '''
     
     # Uploading preprocessed dataset.
     dataset = preprocessing(datapath,cor=True)
@@ -287,6 +403,24 @@ def training_data_loader(datapath,NSample=None):
     #small data: batch = 8
     #medium data: batch = 30
 def training_model(datapath,NSample=0, par = [48,30,0.3]):
+    '''
+    NN training function.
+
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of data in csv format..
+    NSample : int, optional
+        number of entries used of the dataset. If NSamples == 0 or NSamples > data size the all dataset will be used.. The default is 0.
+    par : List of int,int,float, optional
+        list of paramaters passed to the NN costructor [number of epochs the NN will be trained for, size of the batches used to update the weights, fraction of the input dataset used for validation]. The default is [48,30,0.3].
+
+    Returns
+    -------
+    String
+        Namefile of the model saved to disk.
+
+    '''
     
     # Loading and preparing data for training.
     try:
@@ -335,6 +469,22 @@ def training_model(datapath,NSample=0, par = [48,30,0.3]):
     # datapath: string argument specifing path (local or URL) of data in csv format.
 
 def cross_validation(modelpath,datapath):
+    '''
+    KFold cross validation function using scikit-learn API.
+
+    Parameters
+    ----------
+    modelpath : String
+        path (local or URL) of model in joblib format.
+    datapath : String
+        path (local or URL) of data in csv format.
+
+    Returns
+    -------
+    Float
+        Mean between the inference accuracy of each class.
+
+    '''
 
     # Loading and preparing data for validation.
     X,Y=training_data_loader(datapath)
@@ -369,7 +519,27 @@ def cross_validation(modelpath,datapath):
     # iterations: int argument specifing number of iterations performed in training.
 
 def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iterations=10):
-   
+    '''
+    
+    Function to construct and train a BDT using the XGboost library.
+    
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of training data in csv format.
+    datate : String
+        path (local or URL) of test data in csv format.
+    args : dictionary, optional
+        list of parameters. The default is {'eval_metric': ['merror','mlogloss']}.
+    iterations : int, optional
+        number of iterations performed in training. The default is 10.
+
+    Returns
+    -------
+    int
+        No Error code return.
+
+    '''   
     # Loading and preparing training data and test data.
     dataset = preprocessing(datapath,cor=True)
     datatest = preprocessing(datate)
@@ -450,7 +620,20 @@ def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iteratio
     
     # K-Nearest neighbor implementation function. Work in progress and unused for now.
 def neighbor(datapath):
+    '''
+    K-Nearest neighbor implementation function. Work in progress and unused for now.
 
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of training data in csv format.
+
+    Returns
+    -------
+    int
+        No Error code return.
+
+    '''
     time0 = time.time()
 
     dataset = preprocessing(datapath)
@@ -497,7 +680,22 @@ def neighbor(datapath):
     # Function used to asses the optimal parameters for the Keras NN using a brute force approach.
 
 def hyperparam_search(data,param_grid={}):
-    
+    '''
+    Function used to asses the optimal parameters for the Keras NN using a brute force approach.
+
+    Parameters
+    ----------
+    data : String
+        path (local or URL) of training data in csv format.
+    param_grid : dictionary, optional
+        Dict with paramaters we want to search for as KEYS and list of values for each parameter as VALUE. The default is {}.
+
+    Returns
+    -------
+    int
+        No Error code return.
+
+    '''
     dataset,encoded_labels = training_data_loader(data)
     
     estimator = KerasClassifier(build_fn=baseline_model, verbose=2, epochs=48)
@@ -505,10 +703,25 @@ def hyperparam_search(data,param_grid={}):
     search = GridSearchCV(estimator, param_grid,n_jobs=-1)
     search.fit(dataset,encoded_labels)
     print(search.best_params_)
+    return 0
 #%%
     
     # Main function invoked by execution in shell.
 def run(argss):
+    '''
+    Main function invoked by execution in shell.
+
+    Parameters
+    ----------
+    argss : argparse.ArgumentParser
+        Arguments parsed to the invoked function. Contains flags which control the execution of the script: e.g. the model of choice and if you want to train or infer.
+
+    Returns
+    -------
+    int
+        Error code return.
+
+    '''
     
     if argss.data==None: argss.data = "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
     # Routine followed when --xgb is True
@@ -587,6 +800,14 @@ def run(argss):
 #%%    
 # Function used to inspect various seeds in order to have a better accuracy.
 def seed_selector():
+    '''
+    Function used to inspect various seeds in order to have a better accuracy.
+
+    Returns
+    -------
+    None.
+
+    '''
     acc = pd.read_csv("accu4.csv",header=0)
     seeds = pd.DataFrame(columns=['seed','accuracy'])
     for x in range(5):
