@@ -1,6 +1,4 @@
 argparse
-json
-os
 numpy
 pandas
 matplotlib
