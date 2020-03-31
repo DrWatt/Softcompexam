@@ -40,8 +40,6 @@ np.random.seed(seed)
 encoder = LabelEncoder()
 encoder.fit([-4,-3,-2,-1,0,1,2,3,4])
 
-#Model constructor definition, as needed to use scikit-learn wrapper with keras.
-
 def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
     '''
     Model constructor definition, as needed to use scikit-learn wrapper with keras.    
@@ -82,9 +80,6 @@ def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
 
 #%%
 
-# Function to load pretrained NN.
-    # modpath: string argument specifing path (local or URL) of model in joblib format.
-
 def model_upload(modpath):
     '''
     Function to load pretrained NN.
@@ -122,9 +117,6 @@ def model_upload(modpath):
     
         return 404
     return estimator
-
-# Function to load data from disk or using an URL.
-    # datapath: string argument specifing path (local or URL) of data in csv format.
 
 def data_upload(datapath):
     '''
@@ -167,8 +159,6 @@ def data_upload(datapath):
         return 404
     return dataset
 
-# Feature scaling: rescaling via min-max normalization.
-    # datapath: string argument specifing path (local or URL) of data in csv format.
 
 def preprocessing(datapath,cor=False):
     '''
@@ -221,13 +211,7 @@ def preprocessing(datapath,cor=False):
 
     return data
 #%%
-# Function to compute classification of a dataset using a pretrained NN.
-    # datapath: string argument specifing path (local or URL) of data in csv format.
-    # modpath: string argument specifing path (local or URL) of model in joblib format.
-    # performance: boolean arguement changing return mode: False -> return only predictions;
-    #                                                      True -> return predictions and true labels if provided (for evaluating performance).
-    # NSamples: int argument specifing number of entries used of the dataset. If NSamples == 0 or NSamples > data size the all dataset will be used.
-    
+
 def prediction(datapath,modelpath,performance=False,NSamples=0):
     '''
     Function to compute classification of a dataset using a pretrained NN.
@@ -295,10 +279,6 @@ def prediction(datapath,modelpath,performance=False,NSamples=0):
     return pred
 
 
-# Function to perform a simple comparison between prediction and known labels of a test sample.
-    # modelpath: string argument specifing path (local or URL) of model in joblib format.
-    # datatest: string argument specifing path (local or URL) of data in csv format.
-
 def nn_performance(modelpath, datatest):
     '''
     Function to perform a simple comparison between prediction and known labels of a test sample.
@@ -340,10 +320,6 @@ def nn_performance(modelpath, datatest):
 
 
 #%%
-    
-# Function performing one-hot encoding.
-    # datapath: string argument specifing path (local or URL) of data in csv format.
-    # NSamples: int argument specifing number of entries used of the dataset. If NSamples == None or NSamples > data size the all dataset will be used.
 
 def training_data_loader(datapath,NSample=None):
     '''
@@ -390,14 +366,6 @@ def training_data_loader(datapath,NSample=None):
     transformed_BX = np_utils.to_categorical(encoded_BX,9)
     #print(transformed_BX)
     return [X,transformed_BX]
-
-# NN training function.
-    # datapath: string argument specifing path (local or URL) of data in csv format.
-    # NSamples: int argument specifing number of entries used of the dataset. If NSamples == 0 or NSamples > data size the all dataset will be used.
-    # par: list of paramaters [Nepochs, batch, validation_split]    
-    # Nepochs: int paraeter specifing number of epochs the NN will be trained for passed to the NN costructor.
-    # batch: int parameter specifing the size of the batches used to update the weights passed to the NN costructor.
-    # validation_split: float parameter specifing the fraction of the input dataset used for validation.
 
 
     #small data: batch = 8
@@ -464,9 +432,6 @@ def training_model(datapath,NSample=0, par = [48,30,0.3]):
     # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
     return out[0]
 
-# KFold cross validation function using scikit-learn API.
-    # modelpath: string argument specifing path (local or URL) of model in joblib format.
-    # datapath: string argument specifing path (local or URL) of data in csv format.
 
 def cross_validation(modelpath,datapath):
     '''
@@ -510,13 +475,6 @@ def cross_validation(modelpath,datapath):
 ############################################
 #%%
 
-
-
-# Function to construct and train a BDT using the XGboost library.
-    # datapath: string argument specifing path (local or URL) of training data in csv format.
-    # datate: string argument specifing path (local or URL) of test data in csv format.
-    # args: dict argument with list of parameters.
-    # iterations: int argument specifing number of iterations performed in training.
 
 def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iterations=10):
     '''
@@ -618,7 +576,6 @@ def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iteratio
 
 #%%    
     
-    # K-Nearest neighbor implementation function. Work in progress and unused for now.
 def neighbor(datapath):
     '''
     K-Nearest neighbor implementation function. Work in progress and unused for now.
@@ -677,7 +634,6 @@ def neighbor(datapath):
     
     return 0
     
-    # Function used to asses the optimal parameters for the Keras NN using a brute force approach.
 
 def hyperparam_search(data,param_grid={}):
     '''
@@ -706,7 +662,6 @@ def hyperparam_search(data,param_grid={}):
     return 0
 #%%
     
-    # Main function invoked by execution in shell.
 def run(argss):
     '''
     Main function invoked by execution in shell.
@@ -798,7 +753,7 @@ def run(argss):
 
 
 #%%    
-# Function used to inspect various seeds in order to have a better accuracy.
+
 def seed_selector():
     '''
     Function used to inspect various seeds in order to have a better accuracy.
