@@ -4,6 +4,7 @@ pandas
 matplotlib
 joblib
 requests
+tensorflow
 keras
 scikit-learn
 hypothesis
