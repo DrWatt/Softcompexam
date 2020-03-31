@@ -828,9 +828,9 @@ def test_data_upload_link(path):
 def test_data_upload(path):
     print(path)
     data_upload(path)
-def test_data_upload_working():
-    path="https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
-    assert (data_upload(path) == data_upload("datatree.csv")).all(None)
+# def test_data_upload_working():
+#     path="https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
+#     assert (data_upload(path) == data_upload("datatree.csv")).all(None)
 @given(path = st.text())
 def test_model_upload_link(path):
     path.join("http")
@@ -844,9 +844,9 @@ def test_model_upload(path):
     except Exception:
         return 0
 
-def test_model_upload_working():
-    path="https://github.com/DrWatt/softcomp/blob/master/asd.joblib?raw=true"
-    assert (model_upload(path) == model_upload("asd.joblib"))
+# def test_model_upload_working():
+#     path="https://github.com/DrWatt/softcomp/blob/master/asd.joblib?raw=true"
+#     assert (model_upload(path) == model_upload("asd.joblib"))
     
 @given(mod=st.text(),dat=st.text(),n=st.integers(),perf=st.integers(0,1))
 def test_prediction(mod,dat,perf,n):
