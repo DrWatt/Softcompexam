@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from project import data_upload, model_upload, prediction, training_model
+from project import data_upload, model_upload, prediction, training_model,xgtrain
 import pandas as pd
 from hypothesis import given
 import hypothesis.strategies as st
@@ -36,3 +36,8 @@ def test_prediction(mod,dat,perf,n):
 def test_training(dat,n,ne,b,a):
     assert training_model(dat,n,[ne,b,a]) == 4
     
+    
+def test_prediction_fake_data():
+    a = xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1","https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1")
+    print(prediction("fake.csv", "XGBoost_Model.joblib"))
+    return 0
