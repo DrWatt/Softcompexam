@@ -770,48 +770,7 @@ def seed_selector():
         acc=acc.drop(index=(seed[0].astype(int)-acc.head()['seed']))
         seeds = seeds.append(seed,ignore_index=True)
     seeds.to_csv("seeds.csv",index=False,mode='a')
-#%%
-    
-# TESTING
-    
-@given(path = st.text())
-def test_data_upload_link(path):
-    path.join("http")
-    print(path)
-    assert (data_upload(path) == pd.DataFrame()).all(None)
-@given(path = st.text())
-def test_data_upload(path):
-    print(path)
-    data_upload(path)
-# def test_data_upload_working():
-#     path="https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
-#     assert (data_upload(path) == data_upload("datatree.csv")).all(None)
-@given(path = st.text())
-def test_model_upload_link(path):
-    path.join("http")
-    print(path)
-    assert model_upload(path) == 404
-@given(path = st.text())    
-def test_model_upload(path):
-    print(path)
-    try:
-        model_upload(path)
-    except Exception:
-        return 0
-
-# def test_model_upload_working():
-#     path="https://github.com/DrWatt/softcomp/blob/master/asd.joblib?raw=true"
-#     assert (model_upload(path) == model_upload("asd.joblib"))
-    
-@given(mod=st.text(),dat=st.text(),n=st.integers(),perf=st.integers(0,1))
-def test_prediction(mod,dat,perf,n):
-    assert prediction(dat,mod,perf,n) == 404
-@given(dat=st.text(),n=st.integers(),ne=st.integers(),b=st.integers(), a = st.floats() )
-def test_training(dat,n,ne,b,a):
-    assert training_model(dat,n,[ne,b,a]) == 4
-    
-
-    
+  
     
 #%%
 if __name__ == '__main__':
