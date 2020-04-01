@@ -20,7 +20,7 @@ from keras.layers import Dense,Dropout
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.utils import np_utils, plot_model
 # sklearn
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 #from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
@@ -198,18 +198,21 @@ def preprocessing(datapath,cor=False):
             plt.savefig("Correlation_training_set.png")
             plt.clf()
     
-    # Normalization factor (min - max for every feature).
-    norm = data.max() - data.min()
+    # Max Min Normalization: for each column x_normalized = (x - x_min)/(x_max-x_min)
+    cs = MinMaxScaler()
     
-    # Subtracting for every feature its minimum.
-    data2 = data - [0,0,data.min()[2],data.min()[3],data.min()[4],data.min()[5],data.min()[6],data.min()[7],0]
+    data.iloc[:,2:] = cs.fit_transform(data.iloc[:,2:])
     
-    # Normalization.
-    data = data2.div([1,1,norm[2],norm[3],norm[4],norm[5],norm[6],norm[7],1])
-    
-    # Casting to make bx labels integers again.
-    data['bxout'] = data['bxout'].astype(int)
-    data['bx'] = data['bx'].astype(int)
+    # # # Old normalization "by hand" 
+    # # Normalization factor (max - min for every feature).
+    # norm = data.max() - data.min()
+    # # Subtracting for every feature its minimum.
+    # data2 = data - [0,0,data.min()[2],data.min()[3],data.min()[4],data.min()[5],data.min()[6],data.min()[7],0]
+    # # Normalization.
+    # data = data2.div([1,1,norm[2],norm[3],norm[4],norm[5],norm[6],norm[7],1])
+    # # Casting to make bx labels integers again.
+    # data['bxout'] = data['bxout'].astype(int)
+    # data['bx'] = data['bx'].astype(int)
 
     return data
 #%%
