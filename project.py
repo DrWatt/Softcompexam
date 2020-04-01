@@ -760,7 +760,7 @@ def run(argss):
             
             # Construction and training of Keras NN.
             model = training_model(argss.data,
-                            par=pr
+                            par=pr,
                             plotting=True)
             
             # results = 1- nn_performance(model,"datatree.csv")
