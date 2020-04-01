@@ -409,7 +409,7 @@ def training_model(datapath,NSample=0, par = [48,30,0.3]):
     # Saving trained model on disk. (Only default namefile ATM)
     out=dump(estimator,"KerasNN_Model.joblib")
     
-    plot_model(estimator.model, to_file='model.png',show_shapes=True)
+    #plot_model(estimator.model, to_file='model.png',show_shapes=True)
     
     # Accuracy and Loss function plots saved in png format.
     plt.plot(history.history['acc'])
