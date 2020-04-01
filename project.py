@@ -440,8 +440,8 @@ def plotting_NN(estimator,history):
     #plot_model(estimator.model, to_file='model.png',show_shapes=True)
     
     # Accuracy and Loss function plots saved in png format.
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
     plt.title('Model accuracy')
     plt.ylabel('Accuracy')      
     plt.xlabel('Epoch')
