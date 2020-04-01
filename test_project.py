@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import project
-from project import data_upload, model_upload, prediction, training_model,xgtrain
+from project import data_upload, model_upload, prediction, training_model,xgtrain,encoder,seed
 import pandas as pd
 from hypothesis import given
 import hypothesis.strategies as st
@@ -45,12 +45,24 @@ def test_training_failure(dat,n,ne,b,a):
 def test_set_param_NN():
     a = training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", par = [5,5,0.2])
     b = model_upload("KerasNN_Model.joblib")
-    assert b.get_params()['epochs','batch_size'] == [5,5]
+    assert [b.get_params()['epochs'],b.get_params()['batch_size']] == [5,5]
     
     return 0
   
 def test_prediction_xgb():
-    a = xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1","https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1")
+    xgparams = {'max_depth':5,
+                            'eta':0.3,
+                            'subsample':0.82,
+                            'colsample_bytree': 0.68,
+                            'eval_metric': ['merror','mlogloss'],
+                            'silent':0,
+                            'objective':'multi:softmax',
+                            'num_class':len(encoder.classes_),
+                            'seed':seed,
+                            'num_parallel_tree': 5
+                            #'tree_method': 'gpu_hist'
+                            }
+    a = xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1","https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",{'num_class':len(encoder.classes_)})
     print(prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "XGBoost_Model.joblib"))
     return 0
 
