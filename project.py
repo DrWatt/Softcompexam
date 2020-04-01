@@ -437,7 +437,7 @@ def plotting_NN(estimator,history):
     None.
 
     '''
-    plot_model(estimator.model, to_file='model.png',show_shapes=True)
+    #plot_model(estimator.model, to_file='model.png',show_shapes=True)
     
     # Accuracy and Loss function plots saved in png format.
     plt.plot(history.history['acc'])
@@ -503,7 +503,7 @@ def cross_validation(modelpath,datapath):
 #%%
 
 
-def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iterations=10):
+def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
     '''
     
     Function to construct and train a BDT using the XGboost library.
@@ -512,8 +512,6 @@ def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iteratio
     ----------
     datapath : String
         path (local or URL) of training data in csv format.
-    datate : String
-        path (local or URL) of test data in csv format.
     args : dictionary, optional
         list of parameters. The default is {'eval_metric': ['merror','mlogloss']}.
     iterations : int, optional
@@ -525,22 +523,18 @@ def xgtrain(datapath,datate,args={'eval_metric': ['merror','mlogloss']},iteratio
         No Error code return.
 
     '''   
-    # Loading and preparing training data and test data.
+    # Loading and preparing training data.
     dataset = preprocessing(datapath,cor=True)
-    datatest = preprocessing(datate)
     
     # Catching data reading errors.
-    if type(dataset) != pd.DataFrame or type(datatest) != pd.DataFrame: 
+    if type(dataset) != pd.DataFrame: 
         return 404
-    if dataset.empty or datatest.empty :
+    if dataset.empty:
         return 5
     else:
         data = dataset.copy()
-        datats = datatest.copy()
         
         
-    # Constructing from test data DMatrix object to pass to XGboost methods.
-    dtest = xgb.DMatrix(datats[['bx','phi','phiB','wheel','sector','station','quality']])
     print("Dataset length: ",len(data))
     
     # Train validation splitting.
@@ -736,7 +730,6 @@ def run(argss):
                             }
             # Construction and training of XGBoost BDT.
             bdtres = xgtrain(argss.data,
-                    "datatree.csv",
                     xgparams,
                     20)  
             print("Plots of evaluation metrics vs epochs saved. \nModel in .joblib format saved for prediction and testing")
