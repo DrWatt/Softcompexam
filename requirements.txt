@@ -1,6 +1,7 @@
 argparse
 numpy
 pandas
+pydot
 matplotlib
 joblib
 requests
