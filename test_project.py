@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import project
-from project import data_upload, model_upload, prediction, training_model,xgtrain,encoder,seed
+from project import data_upload, model_upload, prediction, training_model,xgtrain,encoder,seed,preprocessing
 import pandas as pd
+import numpy as np
 from hypothesis import given
 import hypothesis.strategies as st
+import argparse
 
 @given(path = st.text())
 def test_data_upload_link_fail(path):
@@ -46,10 +48,9 @@ def test_set_param_NN():
     a = training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", par = [5,5,0.2])
     b = model_upload("KerasNN_Model.joblib")
     assert [b.get_params()['epochs'],b.get_params()['batch_size']] == [5,5]
-    
-    return 0
+
   
-def test_prediction_xgb():
+def test_prediction_xgb_zeros():
     xgparams = {'max_depth':5,
                             'eta':0.3,
                             'subsample':0.82,
@@ -62,11 +63,17 @@ def test_prediction_xgb():
                             'num_parallel_tree': 5
                             #'tree_method': 'gpu_hist'
                             }
-    a = xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1","https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",{'num_class':len(encoder.classes_)})
-    print(prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "XGBoost_Model.joblib"))
-    return 0
+    a = xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1","https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams)
+    c = prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "XGBoost_Model.joblib")
+    b = np.zeros_like(c)
+    assert np.equal(c,b).all()
 
-def test_prediction_nn():
+def test_prediction_nn_zeros():
     a = training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1")
-    print(prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1","KerasNN_Model.joblib"))
-    return 0
+    c = prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "KerasNN_Model.joblib")
+    b = np.zeros_like(c)
+    print(b)
+    print(c)
+    print(preprocessing("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1"))
+    assert np.equal(c,b).all()
+
