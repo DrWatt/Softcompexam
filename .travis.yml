@@ -1,2 +1,4 @@
 language: python
-script: pytest
+script: 
+- pytest
+- ./project.py
