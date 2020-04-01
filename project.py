@@ -86,13 +86,15 @@ def model_upload(modpath):
 
     Parameters
     ----------
-    modpath : Strin
+    modpath : String
         path (local or URL) of model in joblib format..
 
     Returns
     -------
-    TYPE
-        DESCRIPTION.
+    keras.wrappers.scikit_learn.KerasClassifier 
+        Wrapper from the Scikit.learn library of a the Keras Classifier.
+    or
+    
 
     '''
     if("http" in modpath):
@@ -370,7 +372,7 @@ def training_data_loader(datapath,NSample=None):
 
     #small data: batch = 8
     #medium data: batch = 30
-def training_model(datapath,NSample=0, par = [48,30,0.3]):
+def training_model(datapath,NSample=0, par = [48,30,0.3],plotting=False):
     '''
     NN training function.
 
@@ -405,11 +407,34 @@ def training_model(datapath,NSample=0, par = [48,30,0.3]):
     
     # Training method for our model. 
     history = estimator.fit(dataset, encoded_labels, epochs=par[0], batch_size=par[1],verbose=2,validation_split=par[2])
-    
+
     # Saving trained model on disk. (Only default namefile ATM)
     out=dump(estimator,"KerasNN_Model.joblib")
+    if plotting:
+        plotting_NN(estimator, history)
+    # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
+    return out[0]
     
-    #plot_model(estimator.model, to_file='model.png',show_shapes=True)
+def plotting_NN(estimator,history):
+    '''
+    Plotting function that saves three different .png images: 
+    1) Representation of the neural network;
+    2) Plot of the model accuracy thorugh epochs for training and validation sets;
+    3) Plot of the model loss function thorugh epochs for training and validation sets.
+
+    Parameters
+    ----------
+    estimator : keras.wrappers.scikit_learn.KerasClassifier
+        Object containing NN model.
+    history : keras.callbacks.History
+        Return of fit function of the NN model.
+
+    Returns
+    -------
+    None.
+
+    '''
+    plot_model(estimator.model, to_file='model.png',show_shapes=True)
     
     # Accuracy and Loss function plots saved in png format.
     plt.plot(history.history['acc'])
@@ -429,8 +454,7 @@ def training_model(datapath,NSample=0, par = [48,30,0.3]):
     plt.legend(['Train', 'Test'], loc='upper left')
     plt.savefig("Keras_NN_Loss.png")
     plt.clf()
-    # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
-    return out[0]
+    
 
 
 def cross_validation(modelpath,datapath):
@@ -737,7 +761,7 @@ def run(argss):
             # Construction and training of Keras NN.
             model = training_model(argss.data,
                             par=pr
-                            )
+                            plotting=True)
             
             # results = 1- nn_performance(model,"datatree.csv")
             # print("Neural Network's accuracy: ", results)
