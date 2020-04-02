@@ -554,7 +554,7 @@ def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
     bst = xgb.train(args,dtrain,iterations,evallist,early_stopping_rounds=10, evals_result=evals_result)
     
     # Saving tree snapshot.
-    bst.dump_model('bstdump.raw.txt')
+    bst.dump_model('bstdump.raw.json',dump_format='json')
     
     metric = list(evals_result['eval'].keys())
     results = evals_result['eval'][metric[0]]
@@ -703,7 +703,7 @@ def run(argss):
     # Routine followed when --xgb is True
     if argss.xgb:
         # Selection between prediction, using a pretrained model, and training a new one.
-        if argss.p:
+        if argss.modelupload:
             pred = prediction(argss.data,argss.modelupload)
             pred.astype(int).tofile("xgbres.csv",sep='\n',format='%1i')
             print("Predictions saved in .csv format")                
@@ -737,7 +737,7 @@ def run(argss):
     if argss.nn:
         
         # Selection between prediction, using a pretrained model, and training a new one.
-        if argss.p:
+        if argss.modelupload:
             pred = prediction(argss.data,argss.modelupload)
             pred.astype(int).tofile("kerasres.csv",sep='\n',format='%1i')
             print("Predictions saved in .csv format")
@@ -804,7 +804,7 @@ if __name__ == '__main__':
     # parser.add_argument('--modeltraining', help="Choice of ML model between NN, xgboost BDT or KNN")
     parser.add_argument('--xgparams', help="Hyperparameters for xgboost in .json format")
     parser.add_argument('--nnparams',nargs='+', help="Hyperparameters for Keras NN")
-    parser.add_argument('-p', action='store_true', help='If flagged set predecting mode using a previously trained model')
+    #parser.add_argument('-p', action='store_true', help='If flagged set predecting mode using a previously trained model')
     parser.add_argument('--modelupload',type=str,help="Url or path of model in joblib format")
     
     #parser.set_defaults
