@@ -63,7 +63,7 @@ def test_prediction_xgb_zeros():
                             'num_parallel_tree': 5
                             #'tree_method': 'gpu_hist'
                             }
-    a = xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1","https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams)
+    a = xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams)
     c = prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "XGBoost_Model.joblib")
     b = np.zeros_like(c)
     assert np.equal(c,b).all()
