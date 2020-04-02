@@ -123,10 +123,32 @@ You can also perform only inference with a pretrained model specifing the path o
 ```bash
 $ ./project.py --xgb --modelupload "XGBoost_Model.joblib"
 ```
+After the training you will find your model saved in joblib format and plots for accuracy and loss function. While, after the predictions, you will find a csv file with all the labels for each entry of the dataset in input.
 
-### Neural Network from Keras
+### Neural Network from Keras (NN)
 
+To run a training of a BDT you have to type on the Command Line:
+```bash
+./project.py --nn
+```
+his will trigger a training of the default dataset (that you can find [here](https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv) however the script will automatically download it) with default parameters:
+- Number of epochs : 48
+- Batch size: 30
+- Validation split: 0.3
 
+To specify different values for these parameters you can add them after the `--nnparams` flag, writing 0 for the ones you still want the default value:
+```bash
+./project.py --nn --nnparams 50 2 0.1
+```
+If you want to train the NN on different data, you can do it by passing the flag ` --data ` followed by the path on your disk or an URL to the dataset in csv format:
+```bash
+$ ./project.py --nn --data https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv
+```
+You can also perform only inference with a pretrained model specifing the path or URL of an already trained BDT in .joblib format:
+```bash
+$ ./project.py --nn --modelupload "KerasNN_Model.joblib"
+```
+After the training you will find your model saved in joblib format and plots for accuracy and loss function. While, after the predictions, you will find a csv file with all the labels for each entry of the dataset in input.
 
 
 
