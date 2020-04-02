@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.com/DrWatt/Softcompexam.svg?branch=master)](https://travis-ci.com/DrWatt/Softcompexam)
-
-# Softcompexam
+# Softcompexam  [![Build Status](https://travis-ci.com/DrWatt/Softcompexam.svg?branch=master)](https://travis-ci.com/DrWatt/Softcompexam)
 
 Exam code for Software and Computing for Nuclear and Subnuclear Physics course. 
 
