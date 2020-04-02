@@ -86,6 +86,12 @@ root[2] m.Loop()
 ```
 
 ## Using the project.py script
+
+If an error occurs due to missing permission of execution, you can correct that with this command on linux:
+```bash
+$ chmod -v u+x project.py
+```
+
 Now the file you are interested in is ready on your disk if you have followed the steps above. However the script allows you to use directly a URL of a data in csv format with the same features you find in the default one (also downloaded automatically if no data is specified)
 
 There are two Machine Learning models available: a XGBoost Boosted Decision Tree and a Neural Network built with the Keras library.
@@ -149,10 +155,3 @@ You can also perform only inference with a pretrained model specifing the path o
 $ ./project.py --nn --modelupload "KerasNN_Model.joblib"
 ```
 After the training you will find your model saved in joblib format and plots for accuracy and loss function. While, after the predictions, you will find a csv file with all the labels for each entry of the dataset in input.
-
-
-
-If an error occurs due to missing permission of execution, you can correct that with this command on linux:
-```bash
-$ chmod -v u+x project.py
-```
