@@ -94,7 +94,8 @@ def model_upload(modpath):
     keras.wrappers.scikit_learn.KerasClassifier 
         Wrapper from the Scikit.learn library of a the Keras Classifier.
     or
-    
+    xgboost.core.Booster
+        Booster is the model of xgboost, that contains low level routines for training, prediction and evaluation.
 
     '''
     if("http" in modpath):
@@ -575,7 +576,7 @@ def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
             
         plt.plot(list(a for a in evals_result['train'][met]))
         plt.plot(list(a for a in evals_result['eval'][met]))
-        t = "Model " + met
+        t = "Model_" + met
         plt.title(t)
         plt.ylabel(met)      
         plt.xlabel('Epoch')
