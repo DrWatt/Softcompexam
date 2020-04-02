@@ -33,7 +33,27 @@ The script, written in python3, can be executed from the command line, typing `.
 - `-p` to perform prediction using pretrained models;
 - `--modelupload` to specify the Url or path of a pretrained model in joblib format.
 
-    
+
+## Examples
+Here there are some examples of using the script from command line:
+```bash
+$ ./project.py --xgb --data "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
+```
+Starting training using XGBoost with data donwloaded from the URL provided, using default parameters.
+```bash
+$ ./project.py --nn --data "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
+```
+Starting training using Keras Neural Network with data donwloaded from the URL provided, using default parameters.
+```bash
+$ ./project.py --xgb --data "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv" --xgparams "params.json"
+```
+Starting training using XGBoost with data donwloaded from the URL provided and parameters taken from JSON configuration file.
+```bash
+$ ./project.py --nn --data "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv" --nnparams 5 5 0.5
+```
+Starting training using Keras Neural Network with data donwloaded from the URL provided, with 5 Epochs, batch size of 5 input and a validation split of the data of 0.5. 
+
+
 The ROOT tree used to popolate the test database can be found here: https://www.dropbox.com/s/5cywqqkcv04649l/DTTree_zMuSkim_70k.root?dl=0
 
 
