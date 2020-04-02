@@ -88,3 +88,49 @@ root[2] m.Loop()
 ## Using the project.py script
 Now the file you are interested in is ready on your disk if you have followed the steps above. However the script allows you to use directly a URL of a data in csv format with the same features you find in the default one (also downloaded automatically if no data is specified)
 
+There are two Machine Learning models available: a XGBoost Boosted Decision Tree and a Neural Network built with the Keras library.
+
+### Boosted Decision Tree (BDT)
+
+To run a training of a BDT you have to type on the Command Line:
+```bash
+./project.py --xgb
+```
+This will trigger a training of the default dataset (that you can find [here](https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv) however the script will automatically download it) with default parameters:
+```json
+{
+    "max_depth":5,
+    "eta":0.3,
+    "subsample":0.82,
+    "colsample_bytree": 0.68,
+    "eval_metric": ["merror","mlogloss"],
+    "silent":0,
+    "objective":"multi:softmax",
+    "num_class": "len(encoder.classes_)",
+    "seed" : "seed",
+    "num_parallel_tree" : 5
+}
+```
+If you want to train the BDT on different data, you can do it by passing the flag ` --data ` followed by the path on your disk or an URL to the dataset in csv format:
+```bash
+$ ./project.py --xgb --data https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv
+```
+To specify different parameters than the default ones, you have to create a JSON file with inside a dictionary like the one seen above (you can find an example [here](params.json)) and specify it with the `--xgparams` flag:
+```bash
+$ ./project.py --xgb --xgparams params.json
+```
+You can also perform only inference with a pretrained model specifing the path or URL of an already trained BDT in .joblib format:
+```bash
+$ ./project.py --xgb --modelupload "XGBoost_Model.joblib"
+```
+
+### Neural Network from Keras
+
+
+
+
+
+If an error occurs due to missing permission of execution, you can correct that with this command on linux:
+```bash
+$ chmod -v u+x project.py
+```
