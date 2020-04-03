@@ -21,7 +21,7 @@ TFile*		DTTree_ZMuSkim2017F_94X_1kev.root
 KEY: TTree	DTTree;1	CMSSW DT tree
 ```
 In the last line you can see the name of the TTree inside the file (DTTree).
-Then we have to call the method MakeClass(), which will create a header and an implementation in c++ that make access to the data within the Tree easier, by making single leaves available via pointers or as variables.
+Then you have to call the method MakeClass(), which will create a header and an implementation in c++ that make access to the data within the Tree easier, by making single leaves available via pointers or as variables.
 ```bash
 root[2] DTTree->MakeClass()
 ```
