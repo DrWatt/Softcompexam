@@ -154,10 +154,10 @@ NN training function.
 ## plotting_NN(estimator,history):
     
 Plotting function that saves three different .png images: 
-1) Representation of the neural network;
-2) Plot of the model accuracy thorugh epochs for training and validation sets;
-3) Plot of the model loss function thorugh epochs for training and validation sets.
-
+- Representation of the neural network;
+- Plot of the model accuracy thorugh epochs for training and validation sets;
+- Plot of the model loss function thorugh epochs for training and validation sets.
+```
     Parameters
     ----------
     estimator : keras.wrappers.scikit_learn.KerasClassifier
@@ -168,7 +168,7 @@ Plotting function that saves three different .png images:
     Returns
     -------
     None.
-
+```
     
 
 ## cross_validation(modelpath,datapath):
