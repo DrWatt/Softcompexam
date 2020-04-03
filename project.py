@@ -28,9 +28,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn import neighbors
-# Testing libraries
-from hypothesis import given
-import hypothesis.strategies as st
 #xgboost
 import xgboost as xgb
 
@@ -562,6 +559,36 @@ def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
 
     # Objective and evaluation functions plots.
     
+    plotting_xgb(evals_result)
+
+
+    # Saving XGBoost model in joblib format.
+    out = dump(bst,"XGBoost_Model.joblib")
+   
+    
+    # Returning accuracy evaluated using the test data provided.
+    # return accuracy_score(encoder.transform(datats["bxout"]),pred)
+    
+    if not ('merror' in evals_result['train'] and 'mlogloss' in evals_result['train']):
+        print("\n\n\nUSING EVALUATION METRICS NOT SUITED FOR MULTICLASSIFICATION. USE AT YOUR RISK\n\n\n")
+    return 0
+
+
+def plotting_xgb(evals_result):
+    '''
+    Plotting function for the trained XGBoost model.
+
+    Parameters
+    ----------
+    evals_result : dictionary
+        Dictionary with the values of the error metrics in each iteration, divided in train and validation. For example: {'train':[{'merror':##,'mlogloss':##}],'eval':[{'merror':##,'mlogloss':##}]}.
+
+    Returns
+    -------
+    None.
+
+    '''
+    
     for met in evals_result['train']:
         if met == 'merror':
             plt.plot(list(1-a for a in evals_result['train']['merror']))
@@ -583,19 +610,9 @@ def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
         plt.legend(['Train', 'Eval'], loc='upper left')
         plt.savefig("XGBoost_" + t +".png")
         plt.clf()
-
-
-    # Saving XGBoost model in joblib format.
-    out = dump(bst,"XGBoost_Model.joblib")
-   
     
-    # Returning accuracy evaluated using the test data provided.
-    # return accuracy_score(encoder.transform(datats["bxout"]),pred)
     
-    if not ('merror' in evals_result['train'] and 'mlogloss' in evals_result['train']):
-        print("\n\n\nUSING EVALUATION METRICS NOT SUITED FOR MULTICLASSIFICATION. USE AT YOUR RISK\n\n\n")
-    return 0
-
+    
 #%%    
     
 def neighbor(datapath):

@@ -209,6 +209,21 @@ Function to construct and train a BDT using the XGboost library.
         No Error code return.
 
        
+## plotting_xgb(evals_result):
+    
+    Plotting function for the trained XGBoost model.
+
+    Parameters
+    ----------
+    evals_result : dictionary
+        Dictionary with the values of the error metrics in each iteration, divided in train and validation. For example: {'train':[{'merror':##,'mlogloss':##}],'eval':[{'merror':##,'mlogloss':##}]}.
+
+    Returns
+    -------
+    None.
+
+    
+    
 
 ## neighbor(datapath):
     
