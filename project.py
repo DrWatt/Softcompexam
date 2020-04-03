@@ -55,8 +55,8 @@ def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
 
     Returns
     -------
-    model : TYPE
-        DESCRIPTION.
+    model : keras.engine.sequential.Sequential
+        Sequntial NN object to be used inside KerasClassifer method.
 
     '''
     model = Sequential()
