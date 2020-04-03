@@ -8,6 +8,7 @@ from hypothesis import given
 import hypothesis.strategies as st
 import argparse
 
+np.random.seed(seed)
 @given(path = st.text())
 def test_data_upload_link_fail(path):
     path.join("http")
@@ -82,3 +83,22 @@ def test_prediction_nn_zeros():
     print(project.preprocessing("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1"))
     assert np.equal(c,b).all()
 
+def test_consistency_inference_xgb():
+    b = project.prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/XGBoost_Model.joblib")
+    c = project.prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/XGBoost_Model.joblib")
+    
+    assert np.equal(b,c).all()
+    
+    
+def test_consistency_inference_NN():
+
+    b = project.prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/KerasNN_Model.joblib")
+    c = project.prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/KerasNN_Model.joblib")
+    
+    assert np.equal(b,c).all()
+    
+    
+    
+    
+    
+    
