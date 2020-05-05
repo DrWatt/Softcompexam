@@ -103,19 +103,17 @@ def model_upload(modpath):
             mod.raise_for_status()
         except requests.exceptions.RequestException:
             print("Error: Could not download file")
-            return 404
+            raise 
         # Writing model on disk.
         with open("model.joblib","wb") as o:
             o.write(mod.content)
         modpath = "model.joblib"
     print("Loading Model from Disk")
     try:
-        # Uploading model from disk.
+        # Uploading model from disk. 
         estimator = load(modpath)
-    except Exception:
-        print("Error: File not found or empty")
-    
-        return 404
+    except Exception:    
+        raise 
     return estimator
 
 def data_upload(datapath):
@@ -141,8 +139,7 @@ def data_upload(datapath):
             dataset.raise_for_status()
         except requests.exceptions.RequestException:
             print("Error: Could not download file")
-            return 404
-        
+            raise        
         # Writing dataset on disk.    
         with open("dataset.csv","wb") as o:
             o.write(dataset.content)
@@ -152,11 +149,8 @@ def data_upload(datapath):
         # Reading dataset and creating pandas.DataFrame.
         dataset = pd.read_csv(datapath,header=0)
         print("Entries ", len(dataset))        
-        
     except Exception:
-        
-        print("Error: File not found or empty")
-        return 404
+        raise
     return dataset
 
 
@@ -178,13 +172,9 @@ def preprocessing(datapath,cor=False):
 
     '''
     
-    
+
     data = data_upload(datapath)
-    
-    # Failed loading handling (empty dataset exception).
-    if type(data) != pd.DataFrame:
-        return 404
-        
+
     if cor == True:
             f = plt.figure(figsize=(19, 15))
             plt.matshow(data.drop(columns=['bxout']).corr(), fignum=f.number)
@@ -241,22 +231,18 @@ def prediction(datapath,modelpath,performance=False,NSamples=0):
 
     '''
     # Loading dataset and preprocessing it.
-    dataset = preprocessing(datapath)
-    
-    # Failed loading handling (empty dataset exception).
-    if type(dataset) != pd.DataFrame: 
-        return 404
 
-    
+    dataset = preprocessing(datapath)
+
     # Loading NN.
     estimator = model_upload(modelpath)
-    
+
     # Failed loading handling.
-    if estimator == 404:
-        return 404
+    # if estimator == 404:
+    #     return 404
     if type(estimator) != KerasClassifier and type(estimator) != xgb.core.Booster:
         print("Check loaded model compatibility.")
-        return 50000
+        raise TypeError(estimator)
     
     # Handling of number of entries argument (NSample).
     if NSamples == 0:
@@ -301,11 +287,10 @@ def nn_performance(modelpath, datatest):
     '''
     # Performing prediction
     test = prediction(datatest,modelpath,performance=True)
-    
     # Catching error in prediction function
-    if type(test) != list or type(test[0]) != np.ndarray or type(test[1]) != pd.Series:
-        print("Prediction failed")
-        return 3
+    # if type(test) != list or type(test[0]) != np.ndarray or type(test[1]) != pd.Series:
+    #     print("Prediction failed")
+    #     return 3
     
     # Definition of a 'distance' between prediction and true label.
     distance = (test[0]-test[1])
@@ -344,10 +329,7 @@ def training_data_loader(datapath,NSample=None):
     
     # Uploading preprocessed dataset.
     dataset = preprocessing(datapath,cor=True)
-    if type(dataset) != pd.DataFrame: 
-        return 404
-    else:
-        data = dataset.values
+    data = dataset.values
         
     # Handling of number of entries argument (NSample).
     if NSample== None or NSample == 0:
@@ -388,16 +370,15 @@ def training_model(datapath,NSample=0, par = [48,30,0.3],plotting=False):
 
     Returns
     -------
-    String
-        Namefile of the model saved to disk.
+    pandas.DataFrame
+        Values assumed by evaluation metrics through the epochs.
 
     '''
     
     # Loading and preparing data for training.
-    try:
-        dataset,encoded_labels = training_data_loader(datapath,NSample)
-    except Exception:
-        return 4
+
+    dataset,encoded_labels = training_data_loader(datapath,NSample)
+
     # Setting default values in case of some missing parameter.
     if par[0] == 0 : par[0] = 48
     if par[1] == 0 : par[1] = 30
@@ -414,7 +395,7 @@ def training_model(datapath,NSample=0, par = [48,30,0.3],plotting=False):
     if plotting:
         plotting_NN(estimator, history)
     # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
-    return out[0]
+    return pd.DataFrame.from_dict(history.history)
     
 def plotting_NN(estimator,history):
     '''
@@ -475,17 +456,18 @@ def cross_validation(modelpath,datapath):
         Mean between the inference accuracy of each class.
 
     '''
+    
+    # Loading model from disk.
+    estimator = model_upload(modelpath)
 
     # Loading and preparing data for validation.
     X,Y=training_data_loader(datapath)
     
-    # Loading model from disk.
-    estimator = model_upload(modelpath)
-    if estimator == 404:
-        return 404
+    
+
     if type(estimator) != KerasClassifier and type(estimator) != xgb.core.Booster:
         print("Check loaded model compatibility.")
-        return 50000
+        raise TypeError(estimator)
     
     # Defining Folds specifing number of splits.
     kf=KFold(n_splits=10, shuffle=True, random_state=seed)
@@ -517,21 +499,13 @@ def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
 
     Returns
     -------
-    int
-        No Error code return.
+    pandas.DataFrame
+        Values assumed by evaluation metrics through the epochs.
 
     '''   
     # Loading and preparing training data.
     dataset = preprocessing(datapath,cor=True)
-    
-    # Catching data reading errors.
-    if type(dataset) != pd.DataFrame: 
-        return 404
-    if dataset.empty:
-        return 5
-    else:
-        data = dataset.copy()
-        
+    data = dataset.copy()
         
     print("Dataset length: ",len(data))
     
@@ -554,9 +528,12 @@ def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
     # Saving tree snapshot.
     bst.dump_model('bstdump.raw.json',dump_format='json')
     
-    metric = list(evals_result['eval'].keys())
-    results = evals_result['eval'][metric[0]]
-
+    # Converting evals_result dict in a tidier dataframe
+    errmetric = ['train '+ i for i in evals_result['train'].keys()]
+    valmetric = ['eval '+ i for i in evals_result['eval'].keys()]
+    metrics = errmetric+valmetric
+    res = pd.DataFrame.from_dict({k:evals_result[k.split()[0]][k.split()[1]] for k in metrics})
+    
     # Objective and evaluation functions plots.
     
     plotting_xgb(evals_result)
@@ -566,12 +543,12 @@ def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
     out = dump(bst,"XGBoost_Model.joblib")
    
     
-    # Returning accuracy evaluated using the test data provided.
-    # return accuracy_score(encoder.transform(datats["bxout"]),pred)
+    
     
     if not ('merror' in evals_result['train'] and 'mlogloss' in evals_result['train']):
         print("\n\n\nUSING EVALUATION METRICS NOT SUITED FOR MULTICLASSIFICATION. USE AT YOUR RISK\n\n\n")
-    return 0
+    # Returning evaluation metrics values through the epochs.
+    return res
 
 
 def plotting_xgb(evals_result):
@@ -613,92 +590,7 @@ def plotting_xgb(evals_result):
     
     
     
-#%%    
-    
-def neighbor(datapath):
-    '''
-    K-Nearest neighbor implementation function. Work in progress and unused for now.
 
-    Parameters
-    ----------
-    datapath : String
-        path (local or URL) of training data in csv format.
-
-    Returns
-    -------
-    int
-        No Error code return.
-
-    '''
-    time0 = time.time()
-
-    dataset = preprocessing(datapath)
-    if dataset.empty:
-        return 1
-    else:
-        data = dataset.values
-    
-    datatest = preprocessing("dataset.csv")
-    if datatest.empty:
-        return 1
-    else:
-        datat = datatest.values
-    # Handling of number of entries argument (NSample).
-    
-    X = data[:,1:8]
-    BX = data[:,0]
-    test = datat[:,1:8]
-    testlabel = datat[:,0]
-    # Encoding BXs to have labels from 0 to 9.
-    #encoder = LabelEncoder()
-    #encoder.fit(BX)
-    y = encoder.transform(BX)
-    ytest = encoder.transform(testlabel)
-    clf = neighbors.KNeighborsClassifier(n_neighbors=15,algorithm='kd_tree', weights='uniform',n_jobs=-1)
-    clf.fit(X,y)
-    
-    #Z = clf.predict(test)
-    
-    # Definition of a 'distance' between prediction and true label.
-    
-    print(clf.score(test,ytest))
-    
-    #print(Z)
-
-    print("Executed in %s s" % (time.time() - time0))
-
-    
-    
-    
-    
-    return 0
-    
-
-def hyperparam_search(data,param_grid={}):
-    '''
-    Function used to asses the optimal parameters for the Keras NN using a brute force approach.
-
-    Parameters
-    ----------
-    data : String
-        path (local or URL) of training data in csv format.
-    param_grid : dictionary, optional
-        Dict with paramaters we want to search for as KEYS and list of values for each parameter as VALUE. The default is {}.
-
-    Returns
-    -------
-    int
-        No Error code return.
-
-    '''
-    dataset,encoded_labels = training_data_loader(data)
-    
-    estimator = KerasClassifier(build_fn=baseline_model, verbose=2, epochs=48)
-
-    search = GridSearchCV(estimator, param_grid,n_jobs=-1)
-    search.fit(dataset,encoded_labels)
-    print(search.best_params_)
-    return 0
 #%%
     
 def run(argss):
@@ -712,11 +604,15 @@ def run(argss):
 
     Returns
     -------
-    int
-        Error code return.
+    Dictionary
+        Values assumed by evaluation metrics through the epochs for both models.
 
     '''
     
+    if argss.nn == 0 and argss.xgb == 0:
+        raise Exception("Choose a model using the --xgb and/or --nn flags")
+        #print("Choose a model using the --xgb and/or --nn flags")
+    resul = {'XGBoost':0,'KerasNN':0}
     if argss.data==None: argss.data = "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
     # Routine followed when --xgb is True
     if argss.xgb:
@@ -751,6 +647,7 @@ def run(argss):
                     xgparams,
                     20)  
             print("Plots of evaluation metrics vs epochs saved. \nModel in .joblib format saved for prediction and testing")
+            resul['XGBoost'] = bdtres
     # Routine followed when --nn is True
     if argss.nn:
         
@@ -780,14 +677,12 @@ def run(argss):
             # results = 1- nn_performance(model,"datatree.csv")
             # print("Neural Network's accuracy: ", results)
             print("Plots of evaluation metrics vs epochs saved. \nModel in .joblib format saved for prediction and testing")
-
+            resul['KerasNN'] = model
     #print("XGboost's accuracy", bdtres)
             
-    if argss.nn == 0 and argss.xgb == 0:
-        print("Choose a model using the --xgb and/or --nn flags")
-        return 1
+
     
-    return 0
+    return resul
 
 
 #%%    
@@ -829,7 +724,8 @@ if __name__ == '__main__':
     #print(parser.parse_args())
     pars = parser.parse_args()
     #xgparams = json.load(open(pars.xgparams)) if pars.xgparams[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+pars.xgparams))
-    
+    pars.nn = True
+    pars.xgb = True
 
     
     run(pars)
@@ -837,11 +733,3 @@ if __name__ == '__main__':
     print("Executed in %s s" % (time.time() - time0))
     
 
-
-#Errors:
-# 1 No model is chosen
-# 404 missing file    
-# 50000 loaded model different from kerasclassifier and xgbooster
-# 3 Failed prediction function
-# 4 General Error in preparing data for training
-# 5 Empty datasets error
