@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import project
-from project import seed
+from project import seed, baseline_model
 import pandas as pd
 import numpy as np
 import os
@@ -10,38 +10,13 @@ import hypothesis.strategies as st
 import argparse
 
 np.random.seed(seed)
-@given(path = st.text())
-def test_data_upload_link_fail(path):
-    path.join("http")
-    print(path)
-    assert (project.data_upload(path) == pd.DataFrame()).all(None)
-@given(path = st.text())
-def test_data_upload_fail(path):
-    print(path)
-    project.data_upload(path)
 
-@given(path = st.text())
-def test_model_upload_link_fail(path):
-    path.join("http")
-    print(path)
-    assert project.model_upload(path) == 404
-@given(path = st.text())    
-def test_model_upload_fail(path):
-    print(path)
-    try:
-        project.model_upload(path)
-    except Exception:
-        return 0
 
-def test_data_upload_link():
-    a = project.data_upload("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv")
-    print("Data succesfully downloaded and loaded into memory")
-    print(a.head())
-    return 0
+
 
 @given(mod=st.text(),dat=st.text(),n=st.integers(),perf=st.integers(0,1))
 def test_prediction_failure(mod,dat,perf,n):
-    assert project.prediction(dat,mod,perf,n) == 404
+    project.prediction(dat,mod,perf,n)
 @given(dat=st.text(),n=st.integers(),ne=st.integers(),b=st.integers(), a = st.floats() )
 def test_training_failure(dat,n,ne,b,a):
     assert project.training_model(dat,n,[ne,b,a]) == 4
@@ -117,7 +92,27 @@ def test_training_loading_xgb():
                             }
     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams)
     b = project.model_upload("XGBoost_Model.joblib")
+    c = project.model_upload("https://www.dropbox.com/s/yhfwutwu6nyj345/XGBoost_Model.joblib?dl=1")
     os.remove("XGBoost_Model.joblib")
-    return 0
+    os.remove("model.joblib")
+    assert b.best_score == c.best_score
     
     
+def test_model_building():
+    a = project.baseline_model()
+    b = project.model_upload("https://www.dropbox.com/s/gr1apt6na9szclg/KerasNN_Model.joblib?dl=1").model
+    os.remove("model.joblib")
+    assert a.count_params() == b.count_params()
+    
+def test_model_upload():
+    c = project.model_upload("https://www.dropbox.com/s/yhfwutwu6nyj345/XGBoost_Model.joblib?dl=1")
+    assert c.best_score == 0.108329
+
+def test_data_upload():
+    a = project.data_upload("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv")
+    assert not a.empty
+    print("Data succesfully downloaded and loaded into memory")
+    
+def test_preprocessing():
+    a = project.preprocessing("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv")
+    assert a.iloc[:,2:].le(1).all().all()
