@@ -9,4 +9,4 @@ tensorflow
 keras
 scikit-learn
 hypothesis
-xgboost
+xgboost=0.90
