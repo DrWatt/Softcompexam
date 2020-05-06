@@ -71,6 +71,7 @@ def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
     
     # Compile model.
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    
     return model
 
 
@@ -608,11 +609,21 @@ def run(argss):
         Values assumed by evaluation metrics through the epochs for both models.
 
     '''
-    
+    resul = {'XGBoost':0,'KerasNN':0}
+    if argss.testnn:
+         b = prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/XGBoost_Model.joblib")
+         c = prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/XGBoost_Model.joblib")
+         assert np.equal(b,c).all()
+         a = baseline_model()
+         b = model_upload("https://www.dropbox.com/s/gr1apt6na9szclg/KerasNN_Model.joblib?dl=1").model
+         os.remove("model.joblib")
+         assert a.count_params() == b.count_params()
+         return resul
+        
     if argss.nn == 0 and argss.xgb == 0:
         raise Exception("Choose a model using the --xgb and/or --nn flags")
         #print("Choose a model using the --xgb and/or --nn flags")
-    resul = {'XGBoost':0,'KerasNN':0}
+    
     if argss.data==None: argss.data = "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
     # Routine followed when --xgb is True
     if argss.xgb:
@@ -719,13 +730,12 @@ if __name__ == '__main__':
     parser.add_argument('--nnparams',nargs='+', help="Hyperparameters for Keras NN")
     #parser.add_argument('-p', action='store_true', help='If flagged set predecting mode using a previously trained model')
     parser.add_argument('--modelupload',type=str,help="Url or path of model in joblib format")
+    parser.add_argument('--testnn',action='store_true')
     
     #parser.set_defaults
     #print(parser.parse_args())
     pars = parser.parse_args()
     #xgparams = json.load(open(pars.xgparams)) if pars.xgparams[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+pars.xgparams))
-    pars.nn = True
-    pars.xgb = True
 
     
     run(pars)
