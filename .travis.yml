@@ -6,3 +6,4 @@ script:
 - ./project.py --nn
 - ./project.py --data "https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1" --xgb
 - ./project.py --data "https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1" --nn
+- ./project.py --testnn
