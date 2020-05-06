@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import project
+from project import seed
 #from build_NN import baseline_model
 import pandas as pd
 import numpy as np
@@ -9,7 +10,7 @@ from hypothesis import given
 import hypothesis.strategies as st
 import argparse
 
-np.random.seed(project.seed)
+np.random.seed(seed)
 
 # @given(mod=st.text(),dat=st.text(),n=st.integers(),perf=st.integers(0,1))
 # def test_prediction_failure(mod,dat,perf,n):
@@ -87,7 +88,7 @@ def test_training_loading_xgb():
                             'num_parallel_tree': 5
                             #'tree_method': 'gpu_hist'
                             }
-    a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams)
+    a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
     b = project.model_upload("XGBoost_Model.joblib")
     c = project.model_upload("https://www.dropbox.com/s/yhfwutwu6nyj345/XGBoost_Model.joblib?dl=1")
     os.remove("XGBoost_Model.joblib")
@@ -103,7 +104,7 @@ def test_training_loading_xgb():
     
 def test_model_upload():
     c = project.model_upload("https://www.dropbox.com/s/yhfwutwu6nyj345/XGBoost_Model.joblib?dl=1")
-    assert c.best_score == 0.108329
+    assert c.best_score == 0.024466
 
 def test_data_upload():
     a = project.data_upload("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv")
