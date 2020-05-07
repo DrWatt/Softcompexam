@@ -11,7 +11,7 @@ import hypothesis.strategies as st
 import argparse
 
 np.random.seed(seed)
-
+pretrperf = 0.10859411489957964
 # @given(mod=st.text(),dat=st.text(),n=st.integers(),perf=st.integers(0,1))
 # def test_prediction_failure(mod,dat,perf,n):
 #     project.prediction(dat,mod,perf,n)
@@ -115,3 +115,26 @@ def test_preprocessing():
     a = project.preprocessing("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv")
     assert a.iloc[:,2:].le(1).all().all()
     
+    
+    
+def test_nn_performance():
+    a = project.nn_performance("Pretrained_models/XGBoost_Model.joblib","https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv")
+    assert a == pretrperf
+
+def test_train_data_load():
+    a = project.training_data_loader("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv",0)
+    assert np.size(a[0],0) == 4282
+    a = project.training_data_loader("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv",5000)
+    assert np.size(a[0],0) == 4282
+    a = project.training_data_loader("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv",10)    
+    assert np.size(a[0],0) == 10
+    
+    assert np.equal(np.count_nonzero(a[1],1),1).all()
+    assert np.size(a[1],1) == 9
+    
+    
+    
+# def test_X_val():
+    
+    
+# def test_xg_train():

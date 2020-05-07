@@ -317,7 +317,7 @@ def training_data_loader(datapath,NSample=None):
     Parameters
     ----------
     datapath : String
-        path (local or URL) of data in csv format..
+        path (local or URL) of data in csv format.
     NSample : int, optional
         number of entries used of the dataset. If NSamples == None or NSamples > data size the all dataset will be used.. The default is None.
 
@@ -333,7 +333,7 @@ def training_data_loader(datapath,NSample=None):
     data = dataset.values
         
     # Handling of number of entries argument (NSample).
-    if NSample== None or NSample == 0:
+    if NSample == None or NSample == 0:
         X = data[:,1:8]
         BX = data[:,0]
     elif NSample > dataset.size:
