@@ -146,8 +146,8 @@ NN training function.
 
     Returns
     -------
-    String
-        Namefile of the model saved to disk.
+    pandas.DataFrame
+        Values assumed by evaluation metrics through the epochs.
 
     
 
@@ -205,8 +205,8 @@ Function to construct and train a BDT using the XGboost library.
 
     Returns
     -------
-    int
-        No Error code return.
+    pandas.DataFrame
+        Values assumed by evaluation metrics through the epochs.
 
        
 ## plotting_xgb(evals_result):
@@ -222,43 +222,6 @@ Function to construct and train a BDT using the XGboost library.
     -------
     None.
 
-    
-    
-
-## neighbor(datapath):
-    
-K-Nearest neighbor implementation function. Work in progress and unused for now.
-
-    Parameters
-    ----------
-    datapath : String
-        path (local or URL) of training data in csv format.
-
-    Returns
-    -------
-    int
-        No Error code return.
-
-    
-
-## hyperparam_search(data,param_grid={}):
-    
-Function used to asses the optimal parameters for the Keras NN using a brute force approach.
-
-    Parameters
-    ----------
-    data : String
-        path (local or URL) of training data in csv format.
-    param_grid : dictionary, optional
-        Dict with paramaters we want to search for as KEYS and list of values for each parameter as VALUE. The default is {}.
-
-    Returns
-    -------
-    int
-        No Error code return.
-
-    
-
 ## run(argss):
     
 Main function invoked by execution in shell.
@@ -273,14 +236,3 @@ Main function invoked by execution in shell.
     int
         Error code return.
 
-    
-
-## seed_selector():
-    
-Function used to inspect various seeds in order to have a better accuracy.
-
-    Returns
-    -------
-    None.
-
-    

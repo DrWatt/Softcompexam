@@ -16,18 +16,15 @@ from joblib import load, dump
 import requests
 # keras
 from keras.models import Sequential
-from keras.layers import Dense,Dropout
+from keras.layers import Dense
 from keras.wrappers.scikit_learn import KerasClassifier
-from keras.utils import np_utils, plot_model
+from keras.utils import np_utils
 # sklearn
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 #from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import accuracy_score
-from sklearn import neighbors
 #xgboost
 import xgboost as xgb
 
@@ -695,26 +692,6 @@ def run(argss):
     
     return resul
 
-
-#%%    
-
-def seed_selector():
-    '''
-    Function used to inspect various seeds in order to have a better accuracy.
-
-    Returns
-    -------
-    None.
-
-    '''
-    acc = pd.read_csv("accu4.csv",header=0)
-    seeds = pd.DataFrame(columns=['seed','accuracy'])
-    for x in range(5):
-        seed = acc.max(axis=0)
-        acc=acc.drop(index=(seed[0].astype(int)-acc.head()['seed']))
-        seeds = seeds.append(seed,ignore_index=True)
-    seeds.to_csv("seeds.csv",index=False,mode='a')
-  
     
 #%%
 if __name__ == '__main__':
