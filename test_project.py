@@ -14,17 +14,7 @@ import hashlib
 np.random.seed(seed)
 pretrperf = 0.10859411489957964
 
-    
-def test_set_param_NN():
-    a = project.training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", par = [5,5,0.2])
-    b = project.model_upload("KerasNN_Model.joblib")
-    os.remove("KerasNN_Model.joblib")
-    assert [b.get_params()['epochs'],b.get_params()['batch_size']] == [5,5]
-
-
-
-def test_prediction_xgb_zeros():
-    xgparams = {'max_depth':5,
+xgparams = {'max_depth':5,
                             'eta':0.3,
                             'subsample':0.82,
                             'colsample_bytree': 0.68,
@@ -36,6 +26,17 @@ def test_prediction_xgb_zeros():
                             'num_parallel_tree': 5
                             #'tree_method': 'gpu_hist'
                             }
+    
+def test_set_param_NN():
+    a = project.training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", par = [5,5,0.2])
+    b = project.model_upload("KerasNN_Model.joblib")
+    os.remove("KerasNN_Model.joblib")
+    assert [b.get_params()['epochs'],b.get_params()['batch_size']] == [5,5]
+
+
+
+def test_prediction_xgb_zeros():
+
     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams)
     c = project.prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "XGBoost_Model.joblib")
     b = np.zeros_like(c)
@@ -94,35 +95,26 @@ def test_train_data_load():
     
     
 def test_xg_train():
-    xgparams = {'max_depth':5,
-                            'eta':0.3,
-                            'subsample':0.82,
-                            'colsample_bytree': 0.68,
-                            'eval_metric': ['merror','mlogloss'],
-                            'silent':0,
-                            'objective':'multi:softmax',
-                            'num_class':len(project.encoder.classes_),
-                            'seed':project.seed,
-                            'num_parallel_tree': 5
-                            #'tree_method': 'gpu_hist'
-                            }
+    
     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
     b = project.model_upload("XGBoost_Model.joblib")
-    
-    hash_md5 = hashlib.md5()
-    with open("XGBoost_Model.joblib","rb") as f:
-        hash_md5.update(f.read())
-    h = hash_md5.hexdigest()
-    
     c = project.model_upload("https://www.dropbox.com/s/yhfwutwu6nyj345/XGBoost_Model.joblib?dl=1")
     os.remove("XGBoost_Model.joblib")
     os.remove("model.joblib")
     assert b.best_score == c.best_score
     
+
+def test_xg_train_set_param():
+    a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
+  
+    hash_md5 = hashlib.md5()
+    with open("XGBoost_Model.joblib","rb") as f:
+        hash_md5.update(f.read())
+    h = hash_md5.hexdigest()
     
     xgparams['eta'] = 0.5
     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
-    b = project.model_upload("XGBoost_Model.joblib")
+
     hash_md5 = hashlib.md5()
     with open("XGBoost_Model.joblib","rb") as f:
         hash_md5.update(f.read())
