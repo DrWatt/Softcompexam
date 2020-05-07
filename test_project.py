@@ -9,15 +9,10 @@ import os
 from hypothesis import given
 import hypothesis.strategies as st
 import argparse
-
+from joblib import hash
 np.random.seed(seed)
 pretrperf = 0.10859411489957964
-# @given(mod=st.text(),dat=st.text(),n=st.integers(),perf=st.integers(0,1))
-# def test_prediction_failure(mod,dat,perf,n):
-#     project.prediction(dat,mod,perf,n)
-# @given(dat=st.text(),n=st.integers(),ne=st.integers(),b=st.integers(), a = st.floats() )
-# def test_training_failure(dat,n,ne,b,a):
-#     assert project.training_model(dat,n,[ne,b,a]) == 4
+
     
 def test_set_param_NN():
     a = project.training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", par = [5,5,0.2])
@@ -25,11 +20,7 @@ def test_set_param_NN():
     os.remove("KerasNN_Model.joblib")
     assert [b.get_params()['epochs'],b.get_params()['batch_size']] == [5,5]
 
-# def test_set_param_xgb():
-#     xgparams = { "num_class": len(project.encoder.classes_), "max_depth":1}
-#     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams)
-#     b = project.model_upload("XGBoost_Model.joblib").save_config()
-#     print(b)
+
 
 def test_prediction_xgb_zeros():
     xgparams = {'max_depth':5,
@@ -65,43 +56,7 @@ def test_consistency_inference_xgb():
     c = project.prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/XGBoost_Model.joblib")
     
     assert np.equal(b,c).all()
-    
-    
-# def test_consistency_inference_NN():
-#     baseline_model = project.baseline_model()
-#     b = project.prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/KerasNN_Model.joblib")
-#     c = project.prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/KerasNN_Model.joblib")
-    
-#     assert np.equal(b,c).all()
-    
-    
-def test_training_loading_xgb():
-    xgparams = {'max_depth':5,
-                            'eta':0.3,
-                            'subsample':0.82,
-                            'colsample_bytree': 0.68,
-                            'eval_metric': ['merror','mlogloss'],
-                            'silent':0,
-                            'objective':'multi:softmax',
-                            'num_class':len(project.encoder.classes_),
-                            'seed':project.seed,
-                            'num_parallel_tree': 5
-                            #'tree_method': 'gpu_hist'
-                            }
-    a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
-    b = project.model_upload("XGBoost_Model.joblib")
-    c = project.model_upload("https://www.dropbox.com/s/yhfwutwu6nyj345/XGBoost_Model.joblib?dl=1")
-    os.remove("XGBoost_Model.joblib")
-    os.remove("model.joblib")
-    assert b.best_score == c.best_score
-    
-    
-# def test_model_building():
-#     a = project.baseline_model()
-#     b = project.model_upload("https://www.dropbox.com/s/gr1apt6na9szclg/KerasNN_Model.joblib?dl=1").model
-#     os.remove("model.joblib")
-#     assert a.count_params() == b.count_params()
-    
+        
 def test_model_upload():
     c = project.model_upload("https://www.dropbox.com/s/yhfwutwu6nyj345/XGBoost_Model.joblib?dl=1")
     assert c.best_score == 0.024466
@@ -137,4 +92,19 @@ def test_train_data_load():
 # def test_X_val():
     
     
-# def test_xg_train():
+def test_xg_train():
+    xgparams = {'max_depth':5,
+                            'eta':0.3,
+                            'subsample':0.82,
+                            'colsample_bytree': 0.68,
+                            'eval_metric': ['merror','mlogloss'],
+                            'silent':0,
+                            'objective':'multi:softmax',
+                            'num_class':len(project.encoder.classes_),
+                            'seed':project.seed,
+                            'num_parallel_tree': 5
+                            #'tree_method': 'gpu_hist'
+                            }
+    a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
+    b = project.model_upload("XGBoost_Model.joblib")
+    assert hash(b) == '1c53f196e4eabcaf02c927022aca8289'
