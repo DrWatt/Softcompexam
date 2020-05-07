@@ -9,7 +9,7 @@ import os
 from hypothesis import given
 import hypothesis.strategies as st
 import argparse
-from joblib import hash
+import hashlib
 np.random.seed(seed)
 pretrperf = 0.10859411489957964
 
@@ -106,5 +106,8 @@ def test_xg_train():
                             #'tree_method': 'gpu_hist'
                             }
     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
-    b = project.model_upload("XGBoost_Model.joblib")
-    assert hash(b) == '1c53f196e4eabcaf02c927022aca8289'
+    hash_md5 = hashlib.md5()
+    with open("XGBoost_Model.joblib","rb") as f:
+        hash_md5.update(f.read())
+    
+    assert hash_md5.hexdigest() == '35eba9d25828097909063314fac16688'
