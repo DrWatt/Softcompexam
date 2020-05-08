@@ -11,6 +11,7 @@ import hypothesis.strategies as st
 import argparse
 from joblib import hash
 import hashlib
+from math import ceil
 np.random.seed(seed)
 pretrperf = 0.10859411489957964
 
@@ -93,6 +94,12 @@ def test_train_data_load():
     
 # def test_X_val():
     
+def test_xg_data():
+    a,b= project.xg_data_loader("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1")
+    assert a.feature_names == ['bx', 'phi', 'phiB', 'wheel', 'sector', 'station', 'quality']
+    assert b.feature_names == ['bx', 'phi', 'phiB', 'wheel', 'sector', 'station', 'quality']
+    
+    assert ceil((a.num_row()+b.num_row())*0.3) == b.num_row()
     
 def test_xg_train():
     
