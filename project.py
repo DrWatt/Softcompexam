@@ -508,7 +508,7 @@ def xg_data_loader(datapath):
     dvalid = xgb.DMatrix(Xvalid,label=encoder.transform(Yvalid))
     return [dtrain,dvalid]
 
-def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
+def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss'],'num_class':len(encoder.classes_)},iterations=10):
     '''
     
     Function to construct and train a BDT using the XGboost library.
@@ -518,7 +518,7 @@ def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
     datapath : String
         path (local or URL) of training data in csv format.
     args : dictionary, optional
-        list of parameters. The default is {'eval_metric': ['merror','mlogloss']}.
+        list of parameters. The default is {'eval_metric': ['merror','mlogloss'],'num_class':len(encoder.classes_)}.
     iterations : int, optional
         number of iterations performed in training. The default is 10.
 
