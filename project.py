@@ -107,11 +107,9 @@ def model_upload(modpath):
             o.write(mod.content)
         modpath = "model.joblib"
     print("Loading Model from Disk")
-    try:
-        # Uploading model from disk. 
-        estimator = load(modpath)
-    except Exception:    
-        raise 
+
+    # Uploading model from disk. 
+    estimator = load(modpath)
     return estimator
 
 def data_upload(datapath):
@@ -143,12 +141,11 @@ def data_upload(datapath):
             o.write(dataset.content)
         datapath = "dataset.csv"
     print("Loading Dataset from Disk")
-    try:
-        # Reading dataset and creating pandas.DataFrame.
-        dataset = pd.read_csv(datapath,header=0)
-        print("Entries ", len(dataset))        
-    except Exception:
-        raise
+    
+    # Reading dataset and creating pandas.DataFrame.
+    dataset = pd.read_csv(datapath,header=0)
+    print("Entries ", len(dataset))        
+    
     return dataset
 
 
@@ -351,6 +348,47 @@ def training_data_loader(datapath,NSample=None):
     return [X,transformed_BX]
 
 
+def plotting_NN(estimator,history):
+    '''
+    Plotting function that saves three different .png images: 
+    1) Representation of the neural network;
+    2) Plot of the model accuracy thorugh epochs for training and validation sets;
+    3) Plot of the model loss function thorugh epochs for training and validation sets.
+
+    Parameters
+    ----------
+    estimator : keras.wrappers.scikit_learn.KerasClassifier
+        Object containing NN model.
+    history : keras.callbacks.History
+        Return of fit function of the NN model.
+
+    Returns
+    -------
+    None.
+
+    '''
+    #plot_model(estimator.model, to_file='model.png',show_shapes=True)
+    
+    # Accuracy and Loss function plots saved in png format.
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')      
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.savefig("Keras_NN_Accuracy.png")
+    plt.clf()
+    
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.savefig("Keras_NN_Loss.png")
+    plt.clf()
+    
+
     #small data: batch = 8
     #medium data: batch = 30
 def training_model(datapath,NSample=0, par = [48,30,0.3],plotting=False):
@@ -395,46 +433,7 @@ def training_model(datapath,NSample=0, par = [48,30,0.3],plotting=False):
     # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
     return pd.DataFrame.from_dict(history.history)
     
-def plotting_NN(estimator,history):
-    '''
-    Plotting function that saves three different .png images: 
-    1) Representation of the neural network;
-    2) Plot of the model accuracy thorugh epochs for training and validation sets;
-    3) Plot of the model loss function thorugh epochs for training and validation sets.
 
-    Parameters
-    ----------
-    estimator : keras.wrappers.scikit_learn.KerasClassifier
-        Object containing NN model.
-    history : keras.callbacks.History
-        Return of fit function of the NN model.
-
-    Returns
-    -------
-    None.
-
-    '''
-    #plot_model(estimator.model, to_file='model.png',show_shapes=True)
-    
-    # Accuracy and Loss function plots saved in png format.
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')      
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig("Keras_NN_Accuracy.png")
-    plt.clf()
-    
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('Model loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig("Keras_NN_Loss.png")
-    plt.clf()
-    
 
 
 def cross_validation(modelpath,datapath):
@@ -508,64 +507,6 @@ def xg_data_loader(datapath):
     dvalid = xgb.DMatrix(Xvalid,label=encoder.transform(Yvalid))
     return [dtrain,dvalid]
 
-def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss'],'num_class':len(encoder.classes_)},iterations=10):
-    '''
-    
-    Function to construct and train a BDT using the XGboost library.
-    
-    Parameters
-    ----------
-    datapath : String
-        path (local or URL) of training data in csv format.
-    args : dictionary, optional
-        list of parameters. The default is {'eval_metric': ['merror','mlogloss'],'num_class':len(encoder.classes_)}.
-    iterations : int, optional
-        number of iterations performed in training. The default is 10.
-
-    Returns
-    -------
-    pandas.DataFrame
-        Values assumed by evaluation metrics through the epochs.
-
-    '''   
-    # Loading and preparing training data.
-    dtrain,dvalid = xg_data_loader(datapath)
-
-    # Creating list used to tell XGboost training method to validate while training.
-    evallist = [(dvalid, 'eval'), (dtrain, 'train')]
-    
-    print(args)
-
-    evals_result={}    
-    # Training method.
-    bst = xgb.train(args,dtrain,iterations,evallist,early_stopping_rounds=10, evals_result=evals_result)
-    
-    # Saving tree snapshot.
-    bst.dump_model('bstdump.raw.json',dump_format='json')
-    
-    # Converting evals_result dict in a tidier dataframe
-    errmetric = ['train '+ i for i in evals_result['train'].keys()]
-    valmetric = ['eval '+ i for i in evals_result['eval'].keys()]
-    metrics = errmetric+valmetric
-    res = pd.DataFrame.from_dict({k:evals_result[k.split()[0]][k.split()[1]] for k in metrics})
-    
-    # Objective and evaluation functions plots.
-    
-    plotting_xgb(evals_result)
-
-
-    # Saving XGBoost model in joblib format.
-    out = dump(bst,"XGBoost_Model.joblib")
-   
-    
-    
-    
-    if not ('merror' in evals_result['train'] and 'mlogloss' in evals_result['train']):
-        print("\n\n\nUSING EVALUATION METRICS NOT SUITED FOR MULTICLASSIFICATION. USE AT YOUR RISK\n\n\n")
-    # Returning evaluation metrics values through the epochs.
-    return res
-
-
 def plotting_xgb(evals_result):
     '''
     Plotting function for the trained XGBoost model.
@@ -605,6 +546,86 @@ def plotting_xgb(evals_result):
     
     
     
+def xg_save_model(bst,evals_result):
+    '''
+    Function dedicated to saving model on disk and preparing training summary.
+
+    Parameters
+    ----------
+    bst : xgboost.core.Booster
+        Booster is the model of xgboost, that contains low level routines for training, prediction and evaluation.
+    evals_result : dictionary
+        Dictionary with the values of the error metrics in each iteration, divided in train and validation.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Values assumed by evaluation metrics through the epochs.
+
+    '''
+    # Saving tree snapshot.
+    bst.dump_model('bstdump.raw.json',dump_format='json')
+    
+    # Converting evals_result dict in a tidier dataframe
+    errmetric = ['train '+ i for i in evals_result['train'].keys()]
+    valmetric = ['eval '+ i for i in evals_result['eval'].keys()]
+    metrics = errmetric+valmetric
+    res = pd.DataFrame.from_dict({k:evals_result[k.split()[0]][k.split()[1]] for k in metrics})
+    
+    # Objective and evaluation functions plots.
+    
+    plotting_xgb(evals_result)
+
+
+    # Saving XGBoost model in joblib format.
+    out = dump(bst,"XGBoost_Model.joblib")
+    
+    return res
+
+def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss'],'num_class':len(encoder.classes_)},iterations=10):
+    '''
+    
+    Function to construct and train a BDT using the XGboost library.
+    
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of training data in csv format.
+    args : dictionary, optional
+        list of parameters. The default is {'eval_metric': ['merror','mlogloss'],'num_class':len(encoder.classes_)}.
+    iterations : int, optional
+        number of iterations performed in training. The default is 10.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Values assumed by evaluation metrics through the epochs.
+
+    '''   
+    # Loading and preparing training data.
+    dtrain,dvalid = xg_data_loader(datapath)
+
+    # Creating list used to tell XGboost training method to validate while training.
+    evallist = [(dvalid, 'eval'), (dtrain, 'train')]
+    
+    print(args)
+
+    evals_result={}    
+    # Training method.
+    bst = xgb.train(args,dtrain,iterations,evallist,early_stopping_rounds=10, evals_result=evals_result)
+    
+    # Saving tree and getting results.
+    res = xg_save_model(bst,evals_result)
+    
+    
+    
+    if not ('merror' in evals_result['train'] and 'mlogloss' in evals_result['train']):
+        print("\n\n\nUSING EVALUATION METRICS NOT SUITED FOR MULTICLASSIFICATION. USE AT YOUR RISK\n\n\n")
+    # Returning evaluation metrics values through the epochs.
+    return res
+
+
+
 
 #%%
     

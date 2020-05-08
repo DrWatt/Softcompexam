@@ -129,7 +129,24 @@ Function performing one-hot encoding.
     List of pandas.dataframe
         List made up of two Dataframes: the first contains the preprocessed data and the second one contains the one hot encoded labels.
 
+## plotting_NN(estimator,history):
     
+Plotting function that saves three different .png images: 
+- Representation of the neural network;
+- Plot of the model accuracy thorugh epochs for training and validation sets;
+- Plot of the model loss function thorugh epochs for training and validation sets.
+```
+    Parameters
+    ----------
+    estimator : keras.wrappers.scikit_learn.KerasClassifier
+        Object containing NN model.
+    history : keras.callbacks.History
+        Return of fit function of the NN model.
+
+    Returns
+    -------
+    None.
+```    
 
 ## training_model(datapath,NSample=0, par = [48,30,0.3],plotting=False):
     
@@ -149,26 +166,6 @@ NN training function.
     pandas.DataFrame
         Values assumed by evaluation metrics through the epochs.
 
-    
-
-## plotting_NN(estimator,history):
-    
-Plotting function that saves three different .png images: 
-- Representation of the neural network;
-- Plot of the model accuracy thorugh epochs for training and validation sets;
-- Plot of the model loss function thorugh epochs for training and validation sets.
-```
-    Parameters
-    ----------
-    estimator : keras.wrappers.scikit_learn.KerasClassifier
-        Object containing NN model.
-    history : keras.callbacks.History
-        Return of fit function of the NN model.
-
-    Returns
-    -------
-    None.
-```
     
 
 ## cross_validation(modelpath,datapath):
@@ -201,6 +198,34 @@ KFold cross validation function using scikit-learn API.
     list
         Train and validation datasets in DMatrix format.
 
+## plotting_xgb(evals_result):
+    
+    Plotting function for the trained XGBoost model.
+
+    Parameters
+    ----------
+    evals_result : dictionary
+        Dictionary with the values of the error metrics in each iteration, divided in train and validation. For example: {'train':[{'merror':##,'mlogloss':##}],'eval':[{'merror':##,'mlogloss':##}]}.
+
+    Returns
+    -------
+    None.
+
+## xg_save_model(bst,evals_result):
+
+    Function dedicated to saving model on disk and preparing training summary.
+
+    Parameters
+    ----------
+    bst : xgboost.core.Booster
+        Booster is the model of xgboost, that contains low level routines for training, prediction and evaluation.
+    evals_result : dictionary
+        Dictionary with the values of the error metrics in each iteration, divided in train and validation.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Values assumed by evaluation metrics through the epochs.
 
 ## xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
     
@@ -222,18 +247,6 @@ Function to construct and train a BDT using the XGboost library.
         Values assumed by evaluation metrics through the epochs.
 
        
-## plotting_xgb(evals_result):
-    
-    Plotting function for the trained XGBoost model.
-
-    Parameters
-    ----------
-    evals_result : dictionary
-        Dictionary with the values of the error metrics in each iteration, divided in train and validation. For example: {'train':[{'merror':##,'mlogloss':##}],'eval':[{'merror':##,'mlogloss':##}]}.
-
-    Returns
-    -------
-    None.
 
 ## run(argss):
     
