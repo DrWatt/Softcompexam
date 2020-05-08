@@ -187,7 +187,20 @@ KFold cross validation function using scikit-learn API.
     Float
         Mean between the inference accuracy of each class.
 
-    
+## xg_data_loader(datapath)
+
+    Function to upload data, perform train test splitting and create DMatrix objects used by XGBoost methods.
+
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of training data in csv format.
+
+    Returns
+    -------
+    list
+        Train and validation datasets in DMatrix format.
+
 
 ## xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
     

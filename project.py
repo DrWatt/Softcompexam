@@ -479,7 +479,34 @@ def cross_validation(modelpath,datapath):
 
 ############################################
 #%%
+def xg_data_loader(datapath):
+    '''
+    Function to upload data, perform train test splitting and create DMatrix objects used by XGBoost methods.
 
+    Parameters
+    ----------
+    datapath : String
+        path (local or URL) of training data in csv format.
+
+    Returns
+    -------
+    list
+        Train and validation datasets in DMatrix format.
+
+    '''
+    # Loading and preparing training data.
+    dataset = preprocessing(datapath,cor=True)
+    data = dataset.copy()
+        
+    print("Dataset length: ",len(data))
+    
+    # Train validation splitting.
+    Xtrain,Xvalid,Ytrain,Yvalid=train_test_split(data[['bx','phi','phiB','wheel','sector','station','quality']],data["bxout"],random_state=seed,test_size=0.3)
+    
+    # Constructing from training and validation data DMatrix objects to pass to XGboost methods.
+    dtrain = xgb.DMatrix(Xtrain,label=encoder.transform(Ytrain))
+    dvalid = xgb.DMatrix(Xvalid,label=encoder.transform(Yvalid))
+    return [dtrain,dvalid]
 
 def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
     '''
@@ -502,18 +529,8 @@ def xgtrain(datapath,args={'eval_metric': ['merror','mlogloss']},iterations=10):
 
     '''   
     # Loading and preparing training data.
-    dataset = preprocessing(datapath,cor=True)
-    data = dataset.copy()
-        
-    print("Dataset length: ",len(data))
-    
-    # Train validation splitting.
-    Xtrain,Xvalid,Ytrain,Yvalid=train_test_split(data[['bx','phi','phiB','wheel','sector','station','quality']],data["bxout"],random_state=seed,test_size=0.3)
-    
-    # Constructing from training and validation data DMatrix objects to pass to XGboost methods.
-    dtrain = xgb.DMatrix(Xtrain,label=encoder.transform(Ytrain))
-    dvalid = xgb.DMatrix(Xvalid,label=encoder.transform(Yvalid))
-    
+    dtrain,dvalid = xg_data_loader(datapath)
+
     # Creating list used to tell XGboost training method to validate while training.
     evallist = [(dvalid, 'eval'), (dtrain, 'train')]
     
