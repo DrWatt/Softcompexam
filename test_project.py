@@ -8,6 +8,7 @@ import numpy as np
 import os
 import hashlib
 from math import ceil
+import requests
 np.random.seed(seed)
 pretrperf = 0.10859411489957964
 
@@ -44,9 +45,6 @@ def test_prediction_nn_zeros():
     a = project.training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1")
     c = project.prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "KerasNN_Model.joblib")
     b = np.zeros_like(c)
-    print(b)
-    print(c)
-    print(project.preprocessing("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1"))
     os.remove("KerasNN_Model.joblib")
     assert np.equal(c,b).all()
 
@@ -124,4 +122,16 @@ def test_xg_train_set_param():
     hh = hash_md5.hexdigest()
     
     assert h != hh
+    
+    
+def test_xg_save():
+    
+    a = project.model_upload("https://www.dropbox.com/s/yhfwutwu6nyj345/XGBoost_Model.joblib?dl=1")
+    b = requests.get("https://www.dropbox.com/s/gib9if1rsd4yprp/evres.json?dl=1").json()
+    c = project.xg_save_model(a,b)
+    
+    assert c.head(10).equals(pd.read_csv("https://www.dropbox.com/s/o7003cftkgyeoef/ress.csv?dl=1",index_col=0).head(10))
+    
+    
+    
     
