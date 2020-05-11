@@ -5,6 +5,7 @@ import time
 import argparse
 import json
 import os
+from subprocess import check_output
 #numpy
 import numpy as np
 # pandas
@@ -33,7 +34,9 @@ seed = 1563
 np.random.seed(seed)
 encoder = LabelEncoder()
 encoder.fit([-4,-3,-2,-1,0,1,2,3,4])
-
+Nfolder = check_output("n=0; while [ -d \"out_${n}\" ]; do n=$(($n+1)); done; mkdir \"out_${n}\"; echo $n",shell=True)
+#os.system("mkdir -p out_0")
+fold = "out_"+str(Nfolder)[2]
 def baseline_model(indim=7,hidden_nodes=[8,8],outdim=9):
     '''
     Model constructor definition, as needed to use scikit-learn wrapper with keras.    
@@ -103,9 +106,9 @@ def model_upload(modpath):
             print("Error: Could not download file")
             raise 
         # Writing model on disk.
-        with open("out/model.joblib","wb") as o:
+        with open(fold+"/model.joblib","wb") as o:
             o.write(mod.content)
-        modpath = "out/model.joblib"
+        modpath = fold+"/model.joblib"
     print("Loading Model from Disk")
 
     # Uploading model from disk. 
@@ -137,9 +140,9 @@ def data_upload(datapath):
             print("Error: Could not download file")
             raise        
         # Writing dataset on disk.    
-        with open("out/dataset.csv","wb") as o:
+        with open(fold+"/dataset.csv","wb") as o:
             o.write(dataset.content)
-        datapath = "out/dataset.csv"
+        datapath = fold+"/dataset.csv"
     print("Loading Dataset from Disk")
     
     # Reading dataset and creating pandas.DataFrame.
@@ -376,7 +379,7 @@ def plotting_NN(estimator,history):
     plt.ylabel('Accuracy')      
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig("out/Keras_NN_Accuracy.png")
+    plt.savefig(fold+"/Keras_NN_Accuracy.png")
     plt.clf()
     
     plt.plot(history.history['loss'])
@@ -385,7 +388,7 @@ def plotting_NN(estimator,history):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig("out/Keras_NN_Loss.png")
+    plt.savefig(fold+"/Keras_NN_Loss.png")
     plt.clf()
     
 
@@ -427,7 +430,7 @@ def training_model(datapath,NSample=0, par = [48,30,0.3],plotting=False):
     history = estimator.fit(dataset, encoded_labels, epochs=par[0], batch_size=par[1],verbose=2,validation_split=par[2])
 
     # Saving trained model on disk. (Only default namefile ATM)
-    out=dump(estimator,"out/KerasNN_Model.joblib")
+    out=dump(estimator,fold+"/KerasNN_Model.joblib")
     if plotting:
         plotting_NN(estimator, history)
     # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
@@ -530,7 +533,7 @@ def plotting_xgb(evals_result):
             plt.ylabel('Accuracy')      
             plt.xlabel('Epoch')
             plt.legend(['Train', 'Eval'], loc='upper left')
-            plt.savefig("out/XGBoost_model_accuracy.png")
+            plt.savefig(fold+"/XGBoost_model_accuracy.png")
             plt.clf()
             continue
             
@@ -541,7 +544,7 @@ def plotting_xgb(evals_result):
         plt.ylabel(met)      
         plt.xlabel('Epoch')
         plt.legend(['Train', 'Eval'], loc='upper left')
-        plt.savefig("out/XGBoost_" + t +".png")
+        plt.savefig(fold+"/XGBoost_" + t +".png")
         plt.clf()
     
     
@@ -578,7 +581,7 @@ def xg_save_model(bst,evals_result):
 
 
     # Saving XGBoost model in joblib format.
-    out = dump(bst,"out/XGBoost_Model.joblib")
+    out = dump(bst,fold+"/XGBoost_Model.joblib")
     
     return res
 
@@ -656,6 +659,7 @@ def run(argss):
          return resul
         
     if argss.nn == 0 and argss.xgb == 0:
+        os.system("rm -r " + fold)
         raise Exception("Choose a model using the --xgb and/or --nn flags")
         #print("Choose a model using the --xgb and/or --nn flags")
     
@@ -665,7 +669,7 @@ def run(argss):
         # Selection between prediction, using a pretrained model, and training a new one.
         if argss.modelupload:
             pred = prediction(argss.data,argss.modelupload)
-            pred.astype(int).tofile("out/xgbres.csv",sep='\n',format='%1i')
+            pred.astype(int).tofile(fold+"/xgbres.csv",sep='\n',format='%1i')
             print("Predictions saved in .csv format")                
             
         else:
@@ -700,7 +704,7 @@ def run(argss):
         # Selection between prediction, using a pretrained model, and training a new one.
         if argss.modelupload:
             pred = prediction(argss.data,argss.modelupload)
-            pred.astype(int).tofile("out/kerasres.csv",sep='\n',format='%1i')
+            pred.astype(int).tofile(fold+"/kerasres.csv",sep='\n',format='%1i')
             print("Predictions saved in .csv format")
         else:
             # try:
@@ -752,10 +756,9 @@ if __name__ == '__main__':
     pars = parser.parse_args()
     #xgparams = json.load(open(pars.xgparams)) if pars.xgparams[0][0] == '/' else json.load(open(os.path.dirname(os.path.realpath(__file__))+'/'+pars.xgparams))
 
-    os.system("mkdir -p out")
-    
+
     run(pars)
-    
+    print("Files saved in /"+ fold)
     print("Executed in %s s" % (time.time() - time0))
     
 
