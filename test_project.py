@@ -12,6 +12,8 @@ import requests
 np.random.seed(seed)
 pretrperf = 0.10859411489957964
 
+os.system("mkdir -p out")
+
 xgparams = {'max_depth':5,
                             'eta':0.3,
                             'subsample':0.82,
@@ -27,8 +29,8 @@ xgparams = {'max_depth':5,
     
 def test_set_param_NN():
     a = project.training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", par = [5,5,0.2])
-    b = project.model_upload("KerasNN_Model.joblib")
-    os.remove("KerasNN_Model.joblib")
+    b = project.model_upload("out/KerasNN_Model.joblib")
+    os.remove("out/KerasNN_Model.joblib")
     assert [b.get_params()['epochs'],b.get_params()['batch_size']] == [5,5]
 
 
@@ -36,16 +38,16 @@ def test_set_param_NN():
 def test_prediction_xgb_zeros():
 
     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams)
-    c = project.prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "XGBoost_Model.joblib")
+    c = project.prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "out/XGBoost_Model.joblib")
     b = np.zeros_like(c)
-    os.remove("XGBoost_Model.joblib")
+    os.remove("out/XGBoost_Model.joblib")
     assert np.equal(c,b).all()
 
 def test_prediction_nn_zeros():
     a = project.training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1")
-    c = project.prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "KerasNN_Model.joblib")
+    c = project.prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", "out/KerasNN_Model.joblib")
     b = np.zeros_like(c)
-    os.remove("KerasNN_Model.joblib")
+    os.remove("out/KerasNN_Model.joblib")
     assert np.equal(c,b).all()
 
 def test_consistency_inference_xgb():
@@ -98,10 +100,10 @@ def test_xg_data():
 def test_xg_train():
     
     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
-    b = project.model_upload("XGBoost_Model.joblib")
+    b = project.model_upload("out/XGBoost_Model.joblib")
     c = project.model_upload("https://www.dropbox.com/s/yhfwutwu6nyj345/XGBoost_Model.joblib?dl=1")
-    os.remove("XGBoost_Model.joblib")
-    os.remove("model.joblib")
+    os.remove("out/XGBoost_Model.joblib")
+    os.remove("out/model.joblib")
     assert b.best_score == c.best_score
     
 
@@ -109,7 +111,7 @@ def test_xg_train_set_param():
     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
   
     hash_md5 = hashlib.md5()
-    with open("XGBoost_Model.joblib","rb") as f:
+    with open("out/XGBoost_Model.joblib","rb") as f:
         hash_md5.update(f.read())
     h = hash_md5.hexdigest()
     
@@ -117,7 +119,7 @@ def test_xg_train_set_param():
     a = project.xgtrain("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1",xgparams,20)
 
     hash_md5 = hashlib.md5()
-    with open("XGBoost_Model.joblib","rb") as f:
+    with open("out/XGBoost_Model.joblib","rb") as f:
         hash_md5.update(f.read())
     hh = hash_md5.hexdigest()
     

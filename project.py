@@ -105,7 +105,7 @@ def model_upload(modpath):
         # Writing model on disk.
         with open("out/model.joblib","wb") as o:
             o.write(mod.content)
-        modpath = "model.joblib"
+        modpath = "out/model.joblib"
     print("Loading Model from Disk")
 
     # Uploading model from disk. 
