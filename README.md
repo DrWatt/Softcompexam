@@ -60,7 +60,7 @@ The ROOT tree used to populate the test database can be found [here](https://www
 For more information about XGBoost and Keras, you can find their documentation, respectively, [here](https://xgboost.readthedocs.io/en/latest/index.html) and [here](https://keras.io/).
 If you want to know more about the Muon Trigger system at CMS, you can have a look at my [bachelor's thesis](http://amslaurea.unibo.it/16943/1/Tesi.pdf).
 
-##Issues
+## Issues
 
 Due to a new version of the Keras library, some problems could arise when dumping to file the NN model. To avoid them run the script with version 2.3.1 of the Keras module.
 
