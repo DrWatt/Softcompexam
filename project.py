@@ -665,7 +665,7 @@ def run(argss):
          assert np.equal(b,c).all()
          a = baseline_model()
          b = model_upload("https://www.dropbox.com/s/ojb6q3tsc1jicnk/KerasNN_Model.h5?dl=1")
-         os.remove(fold+"/model.joblib")
+         os.remove(fold+"/model.h5")
          assert a.count_params() == b.count_params()
          return resul
         
