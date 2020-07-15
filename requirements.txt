@@ -6,7 +6,7 @@ matplotlib
 joblib
 requests
 tensorflow
-keras==2.3.1
+keras
 scikit-learn
 hypothesis
 xgboost==0.90
