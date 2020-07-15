@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from joblib import load, dump
 import requests
 # keras
-from keras.models import Sequential
+from keras.models import Sequential,load_model
 from keras.layers import Dense
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.utils import np_utils
@@ -112,7 +112,10 @@ def model_upload(modpath):
     print("Loading Model from Disk")
 
     # Uploading model from disk. 
-    estimator = load(modpath)
+    try:
+        estimator = load(modpath)
+    except:
+        estimator = load_model(modpath)
     return estimator
 
 def data_upload(datapath):
@@ -238,7 +241,7 @@ def prediction(datapath,modelpath,performance=False,NSamples=0):
     # Failed loading handling.
     # if estimator == 404:
     #     return 404
-    if type(estimator) != KerasClassifier and type(estimator) != xgb.core.Booster:
+    if type(estimator) != Sequential and type(estimator) != xgb.core.Booster:
         print("Check loaded model compatibility.")
         raise TypeError(estimator)
     
@@ -253,7 +256,8 @@ def prediction(datapath,modelpath,performance=False,NSamples=0):
     print("Thinking about BXs..")
     # Actual prediction method + inverse encoding to get actual BX values.
     try:
-        pred=encoder.inverse_transform(estimator.predict(X))
+        temp=estimator.predict(X)
+        pred=encoder.inverse_transform(np.argmax(temp,axis=1))
     except Exception: 
         dtest = xgb.DMatrix(X[['bx','phi','phiB','wheel','sector','station','quality']])
         pred=encoder.inverse_transform(estimator.predict(dtest).astype(int))   
@@ -430,7 +434,8 @@ def training_model(datapath,NSample=0, par = [48,30,0.3],plotting=False):
     history = estimator.fit(dataset, encoded_labels, epochs=par[0], batch_size=par[1],verbose=2,validation_split=par[2])
 
     # Saving trained model on disk. (Only default namefile ATM)
-    out=dump(estimator,fold+"/KerasNN_Model.joblib")
+    out=estimator.model.save(fold+"/KerasNN_Model.h5")
+    print(type(estimator))
     if plotting:
         plotting_NN(estimator, history)
     # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
@@ -726,7 +731,7 @@ def run(argss):
             
             # results = 1- nn_performance(model,"datatree.csv")
             # print("Neural Network's accuracy: ", results)
-            print("Plots of evaluation metrics vs epochs saved. \nModel in .joblib format saved for prediction and testing")
+            print("Plots of evaluation metrics vs epochs saved. \nModel in .h5 format saved for prediction and testing")
             resul['KerasNN'] = model
     #print("XGboost's accuracy", bdtres)
             
@@ -743,7 +748,7 @@ if __name__ == '__main__':
     parser.add_argument('--data',type=str,help="Url or path of dataset in csv format.")
     parser.add_argument('--xgb', action='store_true', help='If flagged activate xgboost model')
     parser.add_argument('--nn', action='store_true', help='If flagged activate keras nn model')
-    #parser.add_argument('--nnlayout', type=dict, help="Layout for the Keras NN")
+    #parser.add_argument('--nnlayout', type=dict, help="Layout for the Keras NN") :'(
     # parser.add_argument('--modeltraining', help="Choice of ML model between NN, xgboost BDT or KNN")
     parser.add_argument('--xgparams', help="Hyperparameters for xgboost in .json format")
     parser.add_argument('--nnparams',nargs='+', help="Hyperparameters for Keras NN")
