@@ -10,6 +10,7 @@ import hashlib
 from math import ceil
 import requests
 from subprocess import check_output
+import json
 np.random.seed(seed)
 pretrperf = 0.10859411489957964
 
@@ -28,10 +29,8 @@ xgparams = {'max_depth':5,
     
 def test_set_param_NN():
     a = project.training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", par = [5,5,0.2])
-    b = project.model_upload(fold+"/KerasNN_Model")
-    os.remove(fold+"/KerasNN_Model")
-    assert [b.get_params()['epochs'],b.get_params()['batch_size']] == [5,5]
-
+    print(len(a))
+    assert len(a) == 5
 
 
 def test_prediction_xgb_zeros():
@@ -44,9 +43,9 @@ def test_prediction_xgb_zeros():
 
 def test_prediction_nn_zeros():
     a = project.training_model("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1")
-    c = project.prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", fold+"/KerasNN_Model")
+    c = project.prediction("https://www.dropbox.com/s/v4sys56bqhmdfbd/fake.csv?dl=1", fold+"/KerasNN_Model.h5")
     b = np.zeros_like(c)
-    os.remove(fold+"/KerasNN_Model")
+    os.remove(fold+"/KerasNN_Model.h5")
     assert np.equal(c,b).all()
 
 def test_consistency_inference_xgb():

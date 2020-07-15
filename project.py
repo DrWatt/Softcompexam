@@ -105,10 +105,16 @@ def model_upload(modpath):
         except requests.exceptions.RequestException:
             print("Error: Could not download file")
             raise 
+        
         # Writing model on disk.
-        with open(fold+"/model.joblib","wb") as o:
-            o.write(mod.content)
-        modpath = fold+"/model.joblib"
+        if (".joblib" in modpath):
+            with open(fold+"/model.joblib","wb") as o:
+                o.write(mod.content)
+            modpath = fold+"/model.joblib"
+        if (".h5" in modpath):
+            with open(fold+"/model.h5","wb") as o:
+                o.write(mod.content)
+            modpath = fold+"/model.h5"
     print("Loading Model from Disk")
 
     # Uploading model from disk. 
@@ -438,7 +444,7 @@ def training_model(datapath,NSample=0, par = [48,30,0.3],plotting=False):
     print(type(estimator))
     if plotting:
         plotting_NN(estimator, history)
-    # Returning namefile of model in order to use the trained model in other functions e.g. only for predictions.
+    # Returning values assumed by evaluation metrics through the epochs.
     return pd.DataFrame.from_dict(history.history)
     
 
@@ -658,7 +664,7 @@ def run(argss):
          c = prediction("https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv", "Pretrained_models/XGBoost_Model.joblib")
          assert np.equal(b,c).all()
          a = baseline_model()
-         b = model_upload("https://www.dropbox.com/s/gr1apt6na9szclg/KerasNN_Model.joblib?dl=1").model
+         b = model_upload("https://www.dropbox.com/s/ojb6q3tsc1jicnk/KerasNN_Model.h5?dl=1")
          os.remove(fold+"/model.joblib")
          assert a.count_params() == b.count_params()
          return resul
