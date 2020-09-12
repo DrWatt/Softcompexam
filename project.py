@@ -185,8 +185,8 @@ def preprocessing(datapath,cor=False):
     if cor == True:
             f = plt.figure(figsize=(19, 15))
             plt.matshow(data.drop(columns=['bxout']).corr(), fignum=f.number)
-            plt.xticks(range(data.shape[1]), data.drop(columns=['bxout']).columns, fontsize=14, rotation=45)
-            plt.yticks(range(data.shape[1]), data.drop(columns=['bxout']).columns, fontsize=14)
+            plt.xticks(range(data.drop(columns=['bxout']).shape[1]), data.drop(columns=['bxout']).columns, fontsize=14, rotation=45)
+            plt.yticks(range(data.drop(columns=['bxout']).shape[1]), data.drop(columns=['bxout']).columns, fontsize=14)
             cb = plt.colorbar()
             cb.ax.tick_params(labelsize=14)
             plt.title('Correlation Matrix', fontsize=16);
