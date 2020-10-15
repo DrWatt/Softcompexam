@@ -10,3 +10,4 @@ keras
 scikit-learn
 hypothesis
 xgboost==0.90
+hls4ml
