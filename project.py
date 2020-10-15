@@ -28,7 +28,7 @@ from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
 #xgboost
 import xgboost as xgb
-
+import hls4ml
 #%%
 seed = 1563
 np.random.seed(seed)
@@ -669,9 +669,9 @@ def run(argss):
          assert a.count_params() == b.count_params()
          return resul
         
-    if argss.nn == 0 and argss.xgb == 0:
+    if argss.nn == 0 and argss.xgb == 0 and argss.hls == 0:
         os.system("rm -r " + fold)
-        raise Exception("Choose a model using the --xgb and/or --nn flags")
+        raise Exception("Choose a model using the --xgb and/or --nn flags or use the --hls flag to activate hls4ml functionality.")
         #print("Choose a model using the --xgb and/or --nn flags")
     
     if argss.data==None: argss.data = "https://raw.githubusercontent.com/DrWatt/softcomp/master/datatree.csv"
@@ -740,8 +740,19 @@ def run(argss):
             print("Plots of evaluation metrics vs epochs saved. \nModel in .h5 format saved for prediction and testing")
             resul['KerasNN'] = model
     #print("XGboost's accuracy", bdtres)
+    elif argss.hls:
+        if argss.modelupload:
+            model = model_upload(argss.modelupload)
+        else:
+            raise Exception("No keras model provided.")
             
+        config = hls4ml.utils.config_from_keras_model(model, granularity='model')
+        print(config)
 
+        hls_model = hls4ml.converters.convert_from_keras_model(model, hls_config=config, output_dir=fold+'/model_1/hls4ml_prj',fpga_part='xc7k70t-fbv676-1')
+
+        hls_model.compile()
+        hls_model.build()
     
     return resul
 
@@ -754,6 +765,7 @@ if __name__ == '__main__':
     parser.add_argument('--data',type=str,help="Url or path of dataset in csv format.")
     parser.add_argument('--xgb', action='store_true', help='If flagged activate xgboost model')
     parser.add_argument('--nn', action='store_true', help='If flagged activate keras nn model')
+    parser.add_argument('--hls', action='store_true', help='If flagged activate parsing of keras model to HDL')
     #parser.add_argument('--nnlayout', type=dict, help="Layout for the Keras NN") :'(
     # parser.add_argument('--modeltraining', help="Choice of ML model between NN, xgboost BDT or KNN")
     parser.add_argument('--xgparams', help="Hyperparameters for xgboost in .json format")
